@@ -1,44 +1,93 @@
 <template>
   <div>
-  
-      <div class="conteiner">
-        <div class="page-wrapper">
+    <div class="conteiner">
+      <div class="page-wrapper">
         <div class="card">
-  <div class="image-container">
-          <img
-            src="../assets/img/taco.png" alt="inicio" class="inicio"
-          />
-        </div>
-
-        <div class="form-container">
-          <h2 class="title">Inicio de sesión</h2>
-
-          <label class="label" for="email">Correo electrónico</label>
-          <input id="email" type="email" placeholder="Correo electrónico" class="input" />
-
-          <label class="label" for="password">Contraseña</label>
-          <input id="password" type="password" placeholder="Contraseña" class="input" />
-
-        <router-link to="/perfil" class="button primary"> Ingresar </router-link>
-
-          <div class="divider">
-            <div class="line"></div>
-            <span class="or-text">o</span>
-            <div class="line"></div>
+          <div class="image-container">
+            <img src="../assets/img/taco.png" alt="inicio" class="inicio" />
           </div>
 
-          <router-link to="/registro" class="button secondary">Registarse</router-link>
-          </div></div></div>
-        </div>
-        </div>
+          <div class="form-container">
+            <h2 class="title">Inicio de sesión</h2>
 
+            <label class="label" for="correo_electronico">Correo electrónico</label>
+            <input
+              id="correo_electronico"
+              v-model="correo_electronico"
+              type="email"
+              placeholder="Correo electrónico"
+              class="input"
+            />
+
+            <label class="label" for="contrasena">Contraseña</label>
+            <input
+              id="contrasena"
+              v-model="contrasena"
+              type="password"
+              placeholder="Contraseña"
+              class="input"
+            />
+
+            <button class="button primary" @click="login()">Ingresar</button>
+
+            <div class="divider">
+              <div class="line"></div>
+              <span class="or-text">o</span>
+              <div class="line"></div>
+            </div>
+
+            <router-link to="/reg_usuario" class="button secondary">
+              Registrarse
+            </router-link>
+
+            <!-- Mensaje de error -->
+            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'Sabores'
-}
+  name: "Login",
+  data() {
+    return {
+      correo_electronico: "",
+      contrasena: "",
+      errorMessage: "",
+    };
+  },
+  methods: {
+    async login() {
+      try {
+        const response = await fetch("http://localhost:3000/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            correo_electronico: this.correo_electronico,
+            contrasena: this.contrasena,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          this.$router.push({ name: "Perfil", params: { id: data.userId } });
+        } else {
+          this.errorMessage = data.message || "Error al iniciar sesión";
+        }
+      } catch (error) {
+        this.errorMessage = "Error de red o del servidor";
+      }
+    },
+  },
+};
 </script>
+
 <style scoped>
 .container {
   display: flex;
@@ -56,7 +105,7 @@ export default {
   border-radius: 1rem;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-    margin-top: 50px;
+  margin-top: 50px;
 }
 .page-wrapper {
   display: flex;
@@ -73,17 +122,14 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-
 }
 
 .inicio {
-  max-width: 1000px;  /* más razonable que 10px */
+  max-width: 1000px; /* más razonable que 10px */
   width: 150%;
   height: auto;
   object-fit: contain;
 }
-
-
 
 .form-container {
   width: 50%;
@@ -92,7 +138,6 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  
 }
 
 .title {
@@ -135,9 +180,8 @@ export default {
   background-color: #eb8825;
   color: rgb(14, 14, 14);
   text-align: center;
-  text-decoration: none;   
+  text-decoration: none;
 }
-
 
 .primary:hover {
   background-color: #3b5c69;
@@ -154,8 +198,8 @@ export default {
 .secondary {
   background-color: rgb(148, 97, 10);
   color: rgb(14, 14, 14);
-   text-align: center;
-  text-decoration: none;   
+  text-align: center;
+  text-decoration: none;
 }
 
 .secondary:hover {
@@ -195,4 +239,3 @@ export default {
   }
 }
 </style>
-

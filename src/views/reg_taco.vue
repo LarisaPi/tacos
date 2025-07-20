@@ -1,254 +1,239 @@
 <template>
-<br>
+  <div class="contenedor">
     <h2>Registrar Sabores</h2>
-    <div class="form-row image-upload">
-        <div class="imagen-placeholder"></div>
+
+    <div class="grupo">
+      <div class="campo">
+        <label>Sabor</label>
+        <input v-model="form.sabor" type="text" placeholder="Ej. Mango con chile" />
       </div>
-      <div class="registro-container">
-    <form @submit.prevent="registrarUsuario">
-      <div class="direccion-grid">
-        <div>
-          <label>Sabor:</label>
-          <input v-model="form.direccion.calle" type="text" />
-        </div>
-        <div>
-          <label>Precio:</label>
-          <input v-model="form.direccion.ciudad" type="text" />
-        </div>
-        <div>
-          <label>Descripción:</label>
-          <input v-model="form.direccion.codigoPostal" type="text" />
-        </div>
+      <div class="campo">
+        <label>Precio</label>
+        <input v-model="form.precio" type="text" placeholder="Ej. $25.00" />
       </div>
-    </form>
+    </div>
+
+    <div class="campo campo-grande">
+      <label>Descripción</label>
+      <input v-model="form.descripcion" type="text" placeholder="Ej. Dulce, picante y refrescante" />
+    </div>
+
+    <div class="imagen-preview">
+      <label>Imagen del sabor</label>
+      <input type="file" accept="image/*" @change="onImageChange" />
+      <div v-if="previewUrl" class="preview">
+        <img :src="previewUrl" alt="Vista previa del sabor" />
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button class="registrar" @click="registrarSabor">Registrar</button>
+    </div>
   </div>
-  <div class="boton-container">
-<button type="button" class="boton-reg" @click="confirmarRegistro">Registrar</button>
-</div>
 </template>
 
 <script>
+import Swal from "sweetalert2";
+
 export default {
-  name: "RegistroUsuario",
+  name: "RegistroSabores",
   data() {
     return {
       form: {
-        nombre: "",
-        apellidos: "",
-        contacto: "",
-        tipoUsuario: "Administrador",
-        direccion: {
-          calle: "",
-          ciudad: "",
-          codigoPostal: "",
-          estado: "",
-          entreCalles: "",
-        },
+        sabor: "",
+        precio: "",
+        descripcion: "",
       },
+      file: null,
+      previewUrl: null,
     };
   },
   methods: {
-    registrarUsuario() {
-      console.log("Datos enviados:", this.form);
-      alert("Usuario registrado correctamente (simulado)");
+    onImageChange(event) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith("image/")) {
+        if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+        this.file = file;
+        this.previewUrl = URL.createObjectURL(file);
+      } else {
+        this.previewUrl = null;
+        this.file = null;
+        alert("Por favor selecciona una imagen válida.");
+      }
     },
-  },
-};
-</script>
-
-<script setup>
-import Swal from 'sweetalert2'
-
-function confirmarRegistro() {
- Swal.fire({
-  title: '¿Desea registrar este Usuario?',
-  text: '...',
-  icon: 'warning',
-  showCancelButton: true,
-  confirmButtonColor: '#FFF07F',
-  cancelButtonColor: '#d33',
-  confirmButtonText: '¡Sí, registrar Usuario!',
-  cancelButtonText: 'Cancelar',
-  customClass: {
-    popup: 'swal2-popup-black',
-    title: 'swal2-title-black',
-      content: 'swal2-content-black',
-      confirmButton: 'swal2-confirm-custom',
-      cancelButton: 'swal2-cancel-custom'   
-  }
+    registrarSabor() {
+  Swal.fire({
+    title: "¿Desea registrar este sabor?",
+    text: "Se guardará el nuevo sabor en el sistema.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#FFF07F",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "¡Sí, registrar sabor!",
+    cancelButtonText: "Cancelar",
   }).then((result) => {
     if (result.isConfirmed) {
-      Swal.fire({
-        title: '¡Registrado con éxito!',
-        text: 'Usuario registrado con éxito',
-        icon: 'success'
-      }).then(() => {
-        document.getElementById('myform').submit();
-      });
+      // Llama al backend
+      fetch("http://localhost:3000/api/tacos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sabor: this.form.sabor,
+          precio: parseFloat(this.form.precio),
+          descripcion: this.form.descripcion,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            Swal.fire("¡Registrado con éxito!", "Sabor registrado exitosamente.", "success");
+            this.form.sabor = "";
+            this.form.precio = "";
+            this.form.descripcion = "";
+            this.file = null;
+            this.previewUrl = null;
+          } else {
+            throw new Error("No se pudo registrar.");
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          Swal.fire("Error", "Hubo un problema al registrar el sabor.", "error");
+        });
     }
   });
 }
 
+  },
+  beforeUnmount() {
+    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+  },
+};
 </script>
 
-<style>
-.swal2-confirm {
-  color: black !important;
-  background-color: #FFF07F !important;
-  border: none !important;
-}
-
-.swal2-cancel {
-  color: black !important;
-  background-color: #d33 !important;
-  border: none !important;
-}
-</style>
-
 <style scoped>
-/* Contenedor principal del formulario de registro */
-.registro-container {
-  padding: 30px 20px; /* padding menos grande para móviles */
-  border-radius: 10px;
-  max-width: 1000px;
-  width: 90%;
-  margin: auto;
-  font-family: Arial, sans-serif;
-  color: #2e2e2e;
-  box-sizing: border-box;
+.contenedor {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 30px;
+  background-color: #fff;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  font-family: "Roboto", sans-serif;
 }
 
-
-h2{
-  margin-left: 60px;
+h2 {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 30px;
 }
 
-/* Estilos generales para el formulario */
-form {
+.grupo {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.campo {
+  flex: 1;
+  min-width: 400px;
   display: flex;
   flex-direction: column;
+  margin-bottom: 20px;
 }
 
-/* Fila de formulario que contiene etiqueta e input */
-.form-row {
-  display: flex;
-  flex-wrap: wrap; /* Permite que se envuelva en pantallas pequeñas */
-  align-items: center;
-  margin-bottom: 15px;
-  gap: 10px;
+.campo-grande {
+  width: 100%;
 }
 
-/* Ancho de etiquetas, adaptativo */
-.form-row label {
-  flex: 0 0 140px; /* fijo pero puede cambiar */
-  min-width: 100px;
+label {
   font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 16px;
 }
 
-/* Inputs y selects ocupan espacio restante */
-.form-row input,
-.form-row select {
-  flex: 1 1 auto;
-  min-width: 150px; /* mínimo para no hacerse muy pequeños */
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+input[type="text"],
+input[type="file"] {
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1.6px solid #aaa;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  width: 100%;
+  transition: border-color 0.3s ease;
 }
 
-/* Contenedor para carga de imágenes */
-.image-upload {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  margin-left: 50px;
+input[type="text"]:focus,
+input[type="file"]:focus {
+  border-color: #9e5700;
+  outline: none;
 }
 
-/* Cuadro gris marcador de posición para imagen */
-.imagen-placeholder {
-  width: 100px;
-  height: 100px;
-  background-color: #ddd;
-  border: 1px solid #aaa;
-  flex-shrink: 0;
-  margin-top: 50px; /* espacio para que quede más abajo dentro de su contenedor */
+.imagen-preview {
+  margin-top: 30px;
 }
 
-.boton-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+.preview {
+  margin-top: 10px;
+  text-align: center;
 }
 
-/* Botones del formulario */
-.boton-container button {
-  padding: 10px 20px;
+.preview img {
+  max-width: 240px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  background: white;
+  box-shadow: 0 0 5px #ccc;
+}
+
+.acciones {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.registrar {
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
   background-color: #9e5700;
   color: white;
-  border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
-  margin-right: 40px; 
+  transition: background-color 0.3s ease;
+  box-shadow: 0 0 8px #9e5700aa;
 }
 
-/* Diseño en lista vertical para campos de dirección */
-.direccion-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 10px;
+.registrar:hover {
+  background-color: #7c4400;
+  box-shadow: 0 0 12px #7c4400cc;
 }
 
-/* Cada contenedor de campo con margen inferior */
-.direccion-grid > div {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Etiquetas en la lista */
-.direccion-grid label {
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-
-/* Inputs en la lista */
-.direccion-grid input {
-  width: 100%;
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-
-/* Media Queries para pantallas pequeñas */
-@media (max-width: 600px) {
-  .registro-container {
-    padding: 20px 15px;
-    width: 95%;
-  }
-  .form-row {
+@media (max-width: 768px) {
+  .grupo {
     flex-direction: column;
-    align-items: stretch;
   }
-  .form-row label {
-    flex: none;
-    margin-bottom: 5px;
-  }
-  .form-row input,
-  .form-row select {
+
+  .campo {
     min-width: 100%;
   }
-  button {
-    width: 100%;
+
+  .imagen-preview {
     text-align: center;
-     margin-right: 40px; 
   }
-  .image-upload {
-    flex-direction: column;
-    align-items: center;
+
+  .preview img {
+    max-width: 100%;
+    aspect-ratio: 1/1;
+  }
+
+  .registrar {
+    width: 100%;
   }
 }
-
 </style>

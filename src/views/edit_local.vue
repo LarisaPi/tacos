@@ -1,6 +1,6 @@
 <template>
   <div class="contenedor">
-    <h1>Registrar Local</h1>
+    <h1>Editar Local</h1>
 
     <div class="grupo">
       <div class="campo">
@@ -65,84 +65,117 @@
     </div>
 
     <div class="acciones">
-      <button class="registrar" @click="showConfirmDialog">Registrar</button>
+      <button class="editar" @click="() => showConfirmDialog('editar')">Editar</button>
+      <button class="eliminar" @click="() => showConfirmDialog('eliminar')">Eliminar</button>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onBeforeUnmount, onMounted } from "vue";
 import Swal from "sweetalert2";
+import { useRoute } from "vue-router";
 
-export default {
-  name: "RegistrarLocal",
-  data() {
-    return {
-      nombre: "",
-      calle: "",
-      ciudad: "",
-      codigoPostal: "",
-      estado: "",
-      entreCalles: "",
-      colonia: "",
-      descripcion: "",
-      ubicacionFile: null,
-      ubicacionPreviewUrl: null,
-      localFile: null,
-      localPreviewUrl: null,
-    };
-  },
-  methods: {
-    onUbicacionChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith("image/")) {
-        if (this.ubicacionPreviewUrl) URL.revokeObjectURL(this.ubicacionPreviewUrl);
-        this.ubicacionFile = file;
-        this.ubicacionPreviewUrl = URL.createObjectURL(file);
-      } else {
-        this.ubicacionPreviewUrl = null;
-        this.ubicacionFile = null;
-        alert("Por favor selecciona una imagen válida para la ubicación.");
-      }
+const nombre = ref("");
+const descripcion = ref("");
+const calle = ref("");
+const ciudad = ref("");
+const codigoPostal = ref("");
+const estado = ref("");
+const entreCalles = ref("");
+const colonia = ref("");
+const ubicacionFile = ref(null);
+const localFile = ref(null);
+const ubicacionPreviewUrl = ref(null);
+const localPreviewUrl = ref(null);
+
+const route = useRoute();
+
+onMounted(() => {
+  const id = route.query.id;
+  if (id) {
+    nombre.value = "Taco Real Tlaxcala";
+    descripcion.value = "Un local tradicional con tacos de papa y más";
+    calle.value = "Av. Reforma";
+    ciudad.value = "Tlaxcala";
+    codigoPostal.value = "90000";
+    estado.value = "Tlaxcala";
+    entreCalles.value = "Juárez y Allende";
+    colonia.value = "Centro";
+    ubicacionPreviewUrl.value = "https://via.placeholder.com/200x200?text=Ubicación";
+    localPreviewUrl.value = "https://via.placeholder.com/200x200?text=Local";
+  }
+});
+
+function onUbicacionChange(event) {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/")) {
+    if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
+    ubicacionFile.value = file;
+    ubicacionPreviewUrl.value = URL.createObjectURL(file);
+  } else {
+    ubicacionPreviewUrl.value = null;
+    ubicacionFile.value = null;
+    alert("Por favor selecciona una imagen válida para la ubicación.");
+  }
+}
+
+function onLocalChange(event) {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/")) {
+    if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
+    localFile.value = file;
+    localPreviewUrl.value = URL.createObjectURL(file);
+  } else {
+    localPreviewUrl.value = null;
+    localFile.value = null;
+    alert("Por favor selecciona una imagen válida para el local.");
+  }
+}
+
+function showConfirmDialog(accion) {
+  const opciones = {
+    editar: {
+      title: "¿Seguro que quieres editar?",
+      text: "Estás a punto de modificar los datos.",
+      confirmButtonText: "Sí, editar",
+      successTitle: "¡Editado!",
+      successText: "El local fue actualizado.",
     },
-    onLocalChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith("image/")) {
-        if (this.localPreviewUrl) URL.revokeObjectURL(this.localPreviewUrl);
-        this.localFile = file;
-        this.localPreviewUrl = URL.createObjectURL(file);
-      } else {
-        this.localPreviewUrl = null;
-        this.localFile = null;
-        alert("Por favor selecciona una imagen válida para el local.");
-      }
+    eliminar: {
+      title: "¿Seguro que quieres eliminar?",
+      text: "Esta acción no se puede deshacer.",
+      confirmButtonText: "Sí, eliminar",
+      successTitle: "¡Eliminado!",
+      successText: "El local fue eliminado.",
     },
-    showConfirmDialog() {
+  };
+
+  const { title, text, confirmButtonText, successTitle, successText } = opciones[accion];
+
+  Swal.fire({
+    title,
+    text,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText,
+  }).then((result) => {
+    if (result.isConfirmed) {
       Swal.fire({
-        title: "¿Deseas registrar este local?",
-        text: "Se guardarán los datos ingresados.",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonColor: "#308a00",
-        cancelButtonColor: "#aaa",
-        confirmButtonText: "Sí, registrar",
-        cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            title: "¡Registrado!",
-            text: "El local ha sido registrado exitosamente.",
-            icon: "success",
-          });
-          // Aquí puedes agregar la lógica para enviar los datos al backend
-        }
+        title: successTitle,
+        text: successText,
+        icon: "success",
       });
-    },
-  },
-  beforeUnmount() {
-    if (this.ubicacionPreviewUrl) URL.revokeObjectURL(this.ubicacionPreviewUrl);
-    if (this.localPreviewUrl) URL.revokeObjectURL(this.localPreviewUrl);
-  },
-};
+    }
+  });
+}
+
+onBeforeUnmount(() => {
+  if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
+  if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
+});
 </script>
 
 <style scoped>
@@ -240,24 +273,36 @@ input[type="file"] {
   margin-top: 40px;
   display: flex;
   justify-content: center;
+  gap: 20px;
 }
 
-.registrar {
+.editar,
+.eliminar {
   padding: 14px 28px;
   border: none;
   border-radius: 10px;
-  background-color: #4caf50;
-  color: white;
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  box-shadow: 0 0 8px #4caf50aa;
 }
 
-.registrar:hover {
-  background-color: #388e3c;
-  box-shadow: 0 0 12px #388e3ccc;
+.editar {
+  background-color: #ffe600;
+  color: black;
+}
+
+.editar:hover {
+  background-color: #e6d100;
+}
+
+.eliminar {
+  background-color: #d33;
+  color: white;
+}
+
+.eliminar:hover {
+  background-color: #b30000;
 }
 
 @media (max-width: 768px) {
@@ -276,6 +321,11 @@ input[type="file"] {
   .preview {
     height: auto;
     aspect-ratio: 1 / 1;
+  }
+
+  .acciones {
+    flex-direction: column;
+    align-items: center;
   }
 }
 </style>

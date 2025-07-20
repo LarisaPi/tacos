@@ -1,14 +1,29 @@
 <template>
-    <div class="card-grid">
   <div class="food-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
-    <img :src="food.image" alt="Comida" />
-    <h3>{{ food.title }}</h3>
-    <p>{{ food.description }}</p>
-    <div class="buttons">
-      <button @click.stop="handleAdd">Agregar</button>
-      <button @click.stop="handleEdit">Editar</button>
+    <img :src="food.image || placeholderImage" alt="Comida" />
+    <h3><em>{{ food.title }}</em></h3>
+
+    <div class="desc-container">
+      <p class="desc">{{ food.description }}</p>
     </div>
-  </div>
+
+    <div class="qty-section">
+      <strong>Cantidad:</strong>
+      <div class="qty-control">
+        <button @click="decreaseQty">−</button>
+        <input
+          type="number"
+          v-model.number="editableQty"
+          @change="validateQty"
+          min="50"
+        />
+        <button @click="increaseQty">+</button>
+      </div>
+    </div>
+
+    <div class="buttons-center">
+      <button class="delete-button" @click="$emit('remove', index)">Eliminar</button>
+    </div>
   </div>
 </template>
 
@@ -17,14 +32,40 @@ export default {
   name: 'FoodCard',
   props: {
     food: Object,
+    index: Number,
     isHighlighted: Boolean
   },
+  data() {
+    return {
+      placeholderImage: 'https://via.placeholder.com/400x150.png?text=Comida',
+      editableQty: this.food.qty
+    }
+  },
+  watch: {
+    'food.qty'(val) {
+      this.editableQty = val
+    }
+  },
   methods: {
-    handleAdd() {
-      this.$emit('add', this.food)
+    increaseQty() {
+      const newQty = this.editableQty + 1
+      this.editableQty = newQty
+      this.$emit('update-qty', this.index, newQty)
     },
-    handleEdit() {
-      this.$emit('edit', this.food)
+    decreaseQty() {
+      const newQty = Math.max(50, this.editableQty - 1) // <- evita que baje de 50
+      this.editableQty = newQty
+      this.$emit('update-qty', this.index, newQty)
+    },
+    validateQty() {
+      let parsed = parseInt(this.editableQty)
+
+      if (isNaN(parsed) || parsed < 50) {
+        parsed = 50
+      }
+
+      this.editableQty = parsed
+      this.$emit('update-qty', this.index, parsed)
     }
   }
 }
@@ -32,16 +73,15 @@ export default {
 
 <style scoped>
 .food-card {
-  padding: 25px;
+  padding: 20px;
   border-radius: 12px;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   transition: 0.2s;
+  box-sizing: border-box;
 }
 
 .food-card.yellow {
@@ -66,42 +106,88 @@ export default {
 
 .food-card h3 {
   margin: 10px 0 5px;
-  text-align: center;
+  text-align: left;
+  font-weight: bold;
 }
 
-.food-card p {
+.desc-container {
   flex-grow: 1;
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
 }
 
-.buttons {
+.desc {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #333;
   width: 100%;
+  white-space: pre-line;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.qty-section {
+  margin-top: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.qty-control {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: white;
+  border-radius: 10px;
+  padding: 5px 15px;
+  margin-top: 5px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.qty-control button {
+  background-color: #5c67f2;
+  color: white;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.qty-control input {
+  width: 50px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.buttons-center {
+  display: flex;
+  justify-content: center;
   margin-top: 20px;
 }
 
-.buttons button {
-  background-color: #bc8912;
+.delete-button {
+  background-color: #c62828;
+  color: white;
   border: none;
   padding: 10px 18px;
   border-radius: 6px;
-  color: white;
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.2s ease;
-  flex: 1;
-  margin: 0 5px;
 }
 
-.buttons button:hover {
-  background-color: #005f73;
+.delete-button:hover {
+  background-color: #8e0000;
 }
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr); /* ← 5 columnas */
-  gap: 30px;
-  align-items: stretch; /* ← fuerza igual altura */
-}
-
 </style>

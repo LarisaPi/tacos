@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <header>
-      <h1>Chiquihuitl Sabor</h1>
+      <h1>chiquihuitl sabor</h1>
       <div class="search-bar">
         <input v-model="search" placeholder="Buscar..." />
         <button>Buscar</button>
@@ -9,84 +9,75 @@
     </header>
 
     <div class="card-grid">
-      <FoodCard
+      <sabores
         v-for="(item, index) in filteredFoods"
         :key="index"
         :food="item"
         :isHighlighted="index % 2 === 1"
         @add="handleAdd"
+        @edit="handleEdit"
       />
     </div>
   </div>
 </template>
 
 <script>
-import FoodCard from '../components/FoodCard.vue'
+import sabores from "../components/sabores.vue";
+import { useCarritoStore } from '../stores/carrito';
 
 export default {
   components: {
-    FoodCard
+    sabores,
   },
   data() {
     return {
-      search: '',
+      search: "",
       foods: [
         {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacostlaxcala.png', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
+          title: "Taco papa con pistache",
+          image: new URL("../assets/img/tacostlaxcala.png", import.meta.url).href,
+          description:
+            "Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar",
         },
         {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacospapa.jpg', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
+          title: "Taco de papas",
+          image: new URL("../assets/img/tacospapa.jpg", import.meta.url).href,
+          description:
+            "Una mezcla deliciosa de papas fritas con especias en tortilla de maíz",
         },
         {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacosalsa.jpg', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
+          title: "Taco salsa roja",
+          image: new URL("../assets/img/tacosalsa.jpg", import.meta.url).href,
+          description: "Tortilla rellena de guiso con salsa roja casera",
         },
         {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacosalsa.jpg', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
+          title: "Taco tradicional",
+          image: new URL("../assets/img/tacostlaxcala.png", import.meta.url).href,
+          description: "Receta tradicional de Tlaxcala con ingredientes locales",
         },
         {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacosalsa.jpg', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
+          title: "Taco especial",
+          image: new URL("../assets/img/tacosalsa.jpg", import.meta.url).href,
+          description: "Combinación especial de ingredientes para los más exigentes",
         },
-        {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacostlaxcala.png', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
-        },
-        {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacostlaxcala.png', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
-        },
-        {
-          title: 'Taco papa con pistache',
-          image: new URL('../assets/img/tacostlaxcala.png', import.meta.url).href,
-          description: 'Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar'
-        }
-      ]
-    }
+      ],
+    };
   },
   computed: {
     filteredFoods() {
-      return this.foods.filter(food =>
+      return this.foods.filter((food) =>
         food.title.toLowerCase().includes(this.search.toLowerCase())
-      )
-    }
+      );
+    },
   },
   methods: {
-    handleAdd(food) {
-      this.$router.push({ path: '/carrito', query: { producto: JSON.stringify(food) } })
-    }
+  handleAdd(food) {
+    const carrito = useCarritoStore()
+    carrito.agregarAlCarrito(food)
+    // sin redirección
   }
-}
+},
+};
 </script>
 
 <style scoped>
@@ -94,6 +85,7 @@ export default {
   min-height: 100vh;
   padding: 20px;
   font-family: sans-serif;
+  overflow-x: hidden;
 }
 
 header {
@@ -137,43 +129,21 @@ header {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  column-gap: 15px;
-  row-gap: 25px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
 /* Responsivo para tablets */
 @media (max-width: 1024px) {
   .card-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Responsivo para móviles grandes */
-@media (max-width: 600px) {
-  header {
-    justify-content: center;
-  }
-
-  .search-bar {
-    max-width: 100%;
-  }
-
-  .card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Responsivo para móviles pequeños */
-@media (max-width: 400px) {
+/* Responsivo para móviles */
+@media (max-width: 600px) {
   .card-grid {
     grid-template-columns: 1fr;
-  }
-
-  .search-bar button {
-    padding: 10px;
-    margin-left: 5px;
-    font-size: 14px;
   }
 }
 </style>
