@@ -164,7 +164,7 @@ export default {
 }
 
 .input::placeholder {
-  color: #e2f19e;
+  color: #c1c2be;
 }
 
 .button {

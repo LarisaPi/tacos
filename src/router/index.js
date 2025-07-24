@@ -17,6 +17,7 @@ import Sabores from '../views/sabores.vue'
 import Usuario from '../views/usuario.vue'
 import comentarios from '../views/comentarios.vue'
 import reg_usuario from '../views/reg_usuario.vue'
+import pedidos_pendientes from '../views/pedidos_pendientes.vue'
 
 
 const routes = [
@@ -49,6 +50,7 @@ const routes = [
   { path: '/usuario', component: Usuario },
   { path: '/comentarios', component: comentarios },
   { path: '/reg_usuario', component: reg_usuario },
+  { path: '/pedidos_pendintes', component: pedidos_pendientes },
 ]
 
 const router = createRouter({

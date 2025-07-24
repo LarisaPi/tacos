@@ -2,7 +2,10 @@
   <div class="perfil-container">
     <!-- Encabezado de usuario -->
     <div class="perfil-header">
-      <div class="imagen-usuario">{{ iniciales }}</div>
+      <div class="imagen-usuario">
+        <img v-if="usuario.foto_perfil" :src="usuario.foto_perfil" alt="Foto de perfil" />
+        <span v-else>{{ iniciales }}</span>
+      </div>
       <div class="usuario-info">
         <h3>{{ usuario.nombre }} {{ usuario.apellidos }}</h3>
         <p class="email">{{ usuario.contacto }}</p>
@@ -10,7 +13,7 @@
       </div>
     </div>
 
-    <p class="info-aviso">Tu perfil está sincronizado con tu cuenta del local.</p>
+    <p class="info-aviso">Tu perfil está sincronizado con tu cuenta.</p>
 
     <!-- Lista de opciones -->
     <div class="perfil-opciones">
@@ -45,12 +48,24 @@
         </div>
       </div>
 
-      <!-- Estado de pedido - cliente y admin y vendedor -->
-      <div class="opcion" @click="estado">
+      <!-- Estado de pedido - cliente  -->
+      <div class="opcion" @click="estado" v-if="usuario.tipo_usuario === 'cliente'">
         <i class="icon">📦✅</i>
         <div>
           <p class="titulo">Estado de pedido</p>
           <p class="descripcion">Ver el estado de tu pedido.</p>
+        </div>
+      </div>
+      <!-- Estado de pedido - cliente y admin y vendedor -->
+      <div
+        class="opcion"
+        @click="Pedidos_pendientes"
+        v-if="usuario.tipo_usuario !== 'cliente'"
+      >
+        <i class="icon">📦⏳</i>
+        <div>
+          <p class="titulo">Pedidos Pendientes</p>
+          <p class="descripcion">Ver los pedidos pendientes .</p>
         </div>
       </div>
 
@@ -96,6 +111,8 @@
 </template>
 
 <script>
+import Pedidos_pendientes from "./pedidos_pendientes.vue";
+
 export default {
   props: ["id"],
   data() {
@@ -157,6 +174,9 @@ export default {
     registrarLocal() {
       this.$router.push("/registrar_local");
     },
+    Pedidos_pendientes() {
+      this.$router.push("/pedidos_pendientes");
+    },
     cerrarSesion() {
       this.$router.push("/inicio_sesion");
     },
@@ -183,13 +203,22 @@ export default {
 .imagen-usuario {
   width: 60px;
   height: 60px;
-  background-color: #ddd;
   border-radius: 50%;
+  background-color: #ccc;
+  color: white;
   font-weight: bold;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.imagen-usuario img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .usuario-info h3 {

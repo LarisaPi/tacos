@@ -45,15 +45,19 @@
           placeholder="Escribe tu número o correo..."
         />
       </div>
+
       <div class="campo">
         <label>Imagen</label>
-        <input
-          type="file"
-          id="imagen"
-          @change="onFileChange"
-          accept="image/*"
-          class="file-input"
-        />
+        <div class="input-file">
+          <label class="input-file-label" for="imagen">🖼️ Galería</label>
+          <input
+            type="file"
+            id="imagen"
+            @change="onFileChange"
+            accept="image/*"
+            class="file-input"
+          />
+        </div>
       </div>
     </div>
 
@@ -196,8 +200,20 @@ const convertirArchivoABase64 = (file) => {
     reader.readAsDataURL(file);
   });
 };
-
 const guardarCambios = async () => {
+  const confirmacion = await Swal.fire({
+    title: "¿Seguro que quieres editar?",
+    text: "Estás a punto de modificar los datos.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, editar",
+  });
+
+  // Si el usuario no confirma, se cancela la operación
+  if (!confirmacion.isConfirmed) return;
+
   try {
     const id = route.params.id;
 
@@ -205,11 +221,6 @@ const guardarCambios = async () => {
     if (archivoSeleccionado) {
       foto = await convertirArchivoABase64(archivoSeleccionado);
     }
-
-    // si el campo está vacío, se envía la contraseña original
-    const contrasenaFinal = form.contrasena.trim()
-      ? form.contrasena
-      : contrasenaOriginal.value;
 
     const usuarioActualizado = {
       nombre: form.nombre,
@@ -223,8 +234,12 @@ const guardarCambios = async () => {
       estado_provincia_zona: form.direccion.estado_provincia_zona,
       entre_calles: form.direccion.entre_calles,
       foto_perfil: foto,
-      contrasena: contrasenaFinal,
     };
+
+    // ✅ Solo agregamos la contraseña si el usuario escribió algo
+    if (form.contrasena.trim()) {
+      usuarioActualizado.contrasena = form.contrasena;
+    }
 
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
       method: "PUT",
@@ -234,8 +249,13 @@ const guardarCambios = async () => {
 
     if (!res.ok) throw new Error("Error al actualizar");
 
-    Swal.fire("Éxito", "Usuario actualizado correctamente", "success");
-    router.push("/perfil");
+    await Swal.fire({
+      icon: "success",
+      title: "¡Editado!",
+      text: "Se han actualizado tus datos",
+    });
+
+    router.push("/inicio_sesion");
   } catch (error) {
     console.error(error);
     Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
@@ -271,6 +291,46 @@ const eliminarUsuario = () => {
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: inline-block;
+  padding: 12px 250px 12px 130px;
+  background-color: #eee;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: fit-content;
+  margin-top: -1px; /* sube el botón */
+  margin-left: -5px; /* mueve un poco a la izquierda */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 1000px;
   margin: 20px auto;

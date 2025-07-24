@@ -22,7 +22,7 @@
       <div class="image-block">
         <img src="../assets/img/repartocansta.png" alt="Tacos cerca" />
         <p>
-          Una canasta, cientos de historias Cada uno de nuestros 186 sabores cuenta una
+          Una canasta, cientos de historias. Cada uno de nuestros 186 sabores cuenta una
           historia: de familia, de calle, de barrio, de México. En cada mordida viajas a
           diferentes rincones del país sin salir de tu mesa.
         </p>
@@ -39,7 +39,7 @@
       <div class="image-block">
         <img src="../assets/img/tacospapa.jpg" alt="Feria de tacos" />
         <p>
-          El alma en una canasta “Chiquihuitl” significa canasta en náhuatl. Y para
+          El alma en una canasta. “Chiquihuitl” significa canasta en náhuatl. Y para
           nosotros, es más que un nombre: es el símbolo que guarda el calor, el sabor y la
           tradición de nuestra cocina. Así nace cada taco: del alma a tu paladar.
         </p>
@@ -47,7 +47,7 @@
       <div class="image-block">
         <img src="../assets/img/tacosplato.png" alt="Tacos dorados" />
         <p>
-          El alma en una canasta “Chiquihuitl” significa canasta en náhuatl. Y para
+          El alma en una canasta. “Chiquihuitl” significa canasta en náhuatl. Y para
           nosotros, es más que un nombre: es el símbolo que guarda el calor, el sabor y la
           tradición de nuestra cocina. Así nace cada taco: del alma a tu paladar.
         </p>
@@ -55,7 +55,7 @@
       <div class="image-block">
         <img src="../assets/img/entrega.png" alt="Entrega de tacos" />
         <p>
-          Tacos sudaditos, directo a tu antojo No importa si estás en casa, en la oficina
+          Tacos sudaditos, directo a tu antojo. No importa si estás en casa, en la oficina
           o en la calle. Nuestro sabor viaja contigo. Pide tus favoritos y descubre por
           qué somos los tacos de canasta más variados del mundo.
         </p>
@@ -72,7 +72,7 @@ export default {
 
 <style scoped>
 .page {
-  background-color: white; /* rosa claro */
+  background-color: white;
   padding: 16px;
   font-family: "Arial", sans-serif;
 }
@@ -95,6 +95,12 @@ export default {
   margin-bottom: 24px;
 }
 
+.intro-section p {
+  text-align: justify;
+  padding: 0 10px;
+  line-height: 1.6;
+}
+
 .section-title {
   text-align: center;
   font-size: 1.8rem;
@@ -103,23 +109,9 @@ export default {
   font-weight: bold;
 }
 
-.subtitle {
-  font-size: 1.5rem;
-  color: #b3340b;
-  margin-bottom: 10px;
-}
-
-.section {
-  background-color: #e96e42;
-  padding: 16px;
-  border-radius: 8px;
-  color: white;
-  margin-bottom: 20px;
-}
-
 .main-image {
   width: 100%;
-  max-width: 600px; /* o el ancho real de la imagen */
+  max-width: 600px;
   margin-bottom: 10px;
   border-radius: 8px;
   display: block;
@@ -142,21 +134,20 @@ export default {
 
 .image-block img {
   width: 100%;
-  max-width: 400px; /* Ajusta según tu diseño */
-  height: auto; /* Mantiene proporción */
+  max-width: 400px;
+  height: auto;
   border-radius: 6px;
   margin-bottom: 6px;
-  image-rendering: auto;
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
 .image-block p {
-  font-size: 0.9rem;
+  text-align: justify;
+  padding: 0 10px;
+  font-size: 0.95rem;
   color: #333;
-}
-section-title {
-  color: black;
+  line-height: 1.5;
 }
 </style>

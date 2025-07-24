@@ -17,7 +17,11 @@
     <div class="grupo">
       <div class="campo">
         <label>Contacto</label>
-        <input v-model="form.contacto" type="text" placeholder="Ej. 555-123-4567 / correo@example.com" />
+        <input
+          v-model="form.contacto"
+          type="text"
+          placeholder="Ej. 555-123-4567 / correo@example.com"
+        />
       </div>
       <div class="campo">
         <label>Tipo de usuario</label>
@@ -33,11 +37,19 @@
     <div class="grupo">
       <div class="campo">
         <label>Correo electrónico</label>
-        <input v-model="form.correo_electronico" type="email" placeholder="Ej. usuario@ejemplo.com" />
+        <input
+          v-model="form.correo_electronico"
+          type="email"
+          placeholder="Ej. usuario@ejemplo.com"
+        />
       </div>
       <div class="campo">
         <label>Contraseña</label>
-        <input v-model="form.contrasena" type="password" placeholder="Ingrese una contraseña segura" />
+        <input
+          v-model="form.contrasena"
+          type="password"
+          placeholder="Ingrese una contraseña segura"
+        />
       </div>
     </div>
 
@@ -50,30 +62,57 @@
       </div>
       <div class="campo">
         <label>Ciudad</label>
-        <input v-model="form.direccion.ciudad" type="text" placeholder="Ej. Ciudad de México" />
+        <input
+          v-model="form.direccion.ciudad"
+          type="text"
+          placeholder="Ej. Ciudad de México"
+        />
       </div>
     </div>
 
     <div class="grupo">
       <div class="campo">
         <label>Código postal</label>
-        <input v-model="form.direccion.codigo_postal" type="text" placeholder="Ej. 06000" />
+        <input
+          v-model="form.direccion.codigo_postal"
+          type="text"
+          placeholder="Ej. 06000"
+        />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
-        <input v-model="form.direccion.estado_provincia_zona" type="text" placeholder="Ej. CDMX" />
+        <input
+          v-model="form.direccion.estado_provincia_zona"
+          type="text"
+          placeholder="Ej. CDMX"
+        />
       </div>
     </div>
 
     <div class="campo">
       <label>Entre calles</label>
-      <input v-model="form.direccion.entre_calles" type="text" placeholder="Ej. Juárez y Madero" />
+      <input
+        v-model="form.direccion.entre_calles"
+        type="text"
+        placeholder="Ej. Juárez y Madero"
+      />
     </div>
 
     <!-- Imagen de perfil -->
-    <div class="imagen-preview">
+    <div class="campo">
       <label>Imagen de perfil</label>
-      <input type="file" accept="image/*" @change="onUsuarioImageChange" />
+      <div class="input-file">
+        <label class="input-file-label" for="imagenPerfil">🖼️ Galería</label>
+        <input
+          type="file"
+          id="imagenPerfil"
+          accept="image/*"
+          @change="onUsuarioImageChange"
+          class="file-input"
+        />
+      </div>
+
+      <!-- Vista previa -->
       <div v-if="usuarioPreviewUrl" class="preview">
         <img :src="usuarioPreviewUrl" alt="Vista previa de perfil" />
       </div>
@@ -127,7 +166,11 @@ export default {
         this.form.foto_perfil = null;
         if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
         this.usuarioPreviewUrl = null;
-        Swal.fire("Imagen inválida", "Por favor selecciona una imagen válida.", "warning");
+        Swal.fire(
+          "Imagen inválida",
+          "Por favor selecciona una imagen válida.",
+          "warning"
+        );
       }
     },
     registrarUsuario() {
@@ -165,7 +208,11 @@ export default {
             .then((res) => res.json())
             .then((data) => {
               if (data.success) {
-                Swal.fire("¡Registrado con éxito!", "Usuario registrado exitosamente.", "success");
+                Swal.fire(
+                  "¡Registrado con éxito!",
+                  "Usuario registrado exitosamente.",
+                  "success"
+                );
                 this.resetForm();
               } else {
                 throw new Error("No se pudo registrar.");
@@ -205,10 +252,51 @@ export default {
 };
 </script>
 
-
-
-
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #e2dfdf;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: flex; /* para controlar alineación interna */
+  align-items: center; /* centra verticalmente */
+  justify-content: center; /* centra el ícono horizontalmente */
+  width: 100%; /* que ocupe todo el ancho disponible */
+  max-width: 100%; /* para no salirse */
+  padding: 12px 0; /* padding arriba/abajo, nada a los lados */
+  background-color: #eee;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 20px; /* tamaño del ícono */
+  cursor: pointer;
+  margin-top: -1px;
+  margin-left: 0; /* quito margen izquierdo para que quede alineado */
+  box-sizing: border-box; /* para que padding y border no agranden el ancho */
+  transition: background-color 0.2s ease;
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 950px;
   margin: 30px auto;
