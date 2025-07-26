@@ -55,7 +55,7 @@
       </div>
 
       <div class="new-block" v-if="rolPermitido">
-        <button @click="startNew">Agregar taco nuevo</button>
+        <button @click="startNew">Agregar nueva información</button>
         <div v-if="addingNew">
           <input type="file" @change="handleNewImage" />
           <textarea v-model="newText" placeholder="Texto del nuevo taco..." />
