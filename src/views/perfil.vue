@@ -30,6 +30,14 @@
         </div>
       </div>
 
+      <div class="opcion" @click="inicio" v-if="usuario.tipo_usuario !== 'cliente'">
+        <i class="icon">✏️📃</i>
+        <div>
+          <p class="titulo">Editar inicio</p>
+          <p class="descripcion">Editar el contenido del inicio</p>
+        </div>
+      </div>
+
       <!-- Editar - todos -->
       <div class="opcion" @click="edit_usuario">
         <i class="icon">📝👤</i>
@@ -177,6 +185,13 @@ export default {
     Pedidos_pendientes() {
       this.$router.push("/pedidos_pendientes");
     },
+    inicio() {
+      this.$router.push({
+        name: "Inicio",
+        params: { rol: this.usuario.tipo_usuario },
+      });
+    },
+
     cerrarSesion() {
       this.$router.push("/inicio_sesion");
     },

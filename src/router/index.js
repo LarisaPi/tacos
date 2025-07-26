@@ -21,7 +21,12 @@ import pedidos_pendientes from '../views/pedidos_pendientes.vue'
 
 
 const routes = [
-  { path: '/inicio', component: Inicio },
+ {
+  path: "/inicio/:rol?",
+  name: "Inicio",
+  component: Inicio,
+  props: route => ({ rolUsuario: route.params.rol })
+},
   { path: '/carrito', component: Carrito },
   { path: '/cotizar', component: Cotizar },
   { path: '/sabores', component: Sabores },

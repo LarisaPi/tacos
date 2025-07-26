@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 
 
-
 app.post('/api/login', async (req, res) => {
   const { correo_electronico, contrasena } = req.body;
 
@@ -25,7 +24,7 @@ app.post('/api/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // 🧠 Validación de contraseña hasheada
+   
     const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
 
     if (!passwordMatch) {
@@ -53,7 +52,7 @@ app.post('/api/tacos', async (req, res) => {
       VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
-    const values = [sabor, precio, descripcion, 1]; // Puedes cambiar fk_local según convenga
+    const values = [sabor, precio, descripcion, 1]; 
 
     const result = await pool.query(query, values);
     res.json({ success: true, data: result.rows[0] });
@@ -77,7 +76,7 @@ app.post('/api/usuarios', async (req, res) => {
     contrasena,
     estado_provincia_zona,
     entre_calles,
-    foto_perfil = null,  // Por si no se envía imagen
+    foto_perfil = null,  
   } = req.body;
 
   console.log('Datos recibidos usuario:', req.body);
@@ -123,7 +122,6 @@ app.get('/api/usuarios', async (req, res) => {
       FROM usuario
     `);
 
-    // Envía el resultado (array de usuarios) en JSON
     res.json(resultado.rows);
   } catch (error) {
     console.error('Error consultando usuarios:', error);
@@ -227,8 +225,6 @@ app.put('/api/usuarios/:id', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al actualizar usuario' });
   }
 });
-
-
 // Eliminar usuario
 app.delete('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
@@ -247,6 +243,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al eliminar usuario' });
   }
 });
+
 
 app.listen(3000, () => {
   console.log('Servidor backend en http://localhost:3000');
