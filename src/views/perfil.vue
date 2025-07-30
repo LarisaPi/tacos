@@ -38,6 +38,22 @@
         </div>
       </div>
 
+      <div class="opcion" @click="sabores" v-if="usuario.tipo_usuario !== 'cliente'">
+        <i class="icon">✏️🌮</i>
+        <div>
+          <p class="titulo">Editar sabores</p>
+          <p class="descripcion">Editar el sabor que deseas</p>
+        </div>
+      </div>
+
+      <div class="opcion" @click="locales" v-if="usuario.tipo_usuario !== 'cliente'">
+        <i class="icon">✏️🌮</i>
+        <div>
+          <p class="titulo">Editar locales</p>
+          <p class="descripcion">Editar el local que deseas</p>
+        </div>
+      </div>
+
       <!-- Editar - todos -->
       <div class="opcion" @click="edit_usuario">
         <i class="icon">📝👤</i>
@@ -57,7 +73,7 @@
       </div>
 
       <!-- Estado de pedido - cliente  -->
-      <div class="opcion" @click="estado" v-if="usuario.tipo_usuario === 'cliente'">
+      <div class="opcion" @click="estado">
         <i class="icon">📦✅</i>
         <div>
           <p class="titulo">Estado de pedido</p>
@@ -67,7 +83,7 @@
       <!-- Estado de pedido - cliente y admin y vendedor -->
       <div
         class="opcion"
-        @click="Pedidos_pendientes"
+        @click="tabla_pedidos"
         v-if="usuario.tipo_usuario !== 'cliente'"
       >
         <i class="icon">📦⏳</i>
@@ -119,7 +135,9 @@
 </template>
 
 <script>
-import Pedidos_pendientes from "./pedidos_pendientes.vue";
+import Comentarios from "./comentarios.vue";
+import Locales from "./locales.vue";
+import Tabla_pedidos from "./tabla_pedidos.vue";
 
 export default {
   props: ["id"],
@@ -182,12 +200,24 @@ export default {
     registrarLocal() {
       this.$router.push("/registrar_local");
     },
-    Pedidos_pendientes() {
-      this.$router.push("/pedidos_pendientes");
+    tabla_pedidos() {
+      this.$router.push("/tabla_pedidos");
     },
     inicio() {
       this.$router.push({
         name: "Inicio",
+        params: { rol: this.usuario.tipo_usuario },
+      });
+    },
+    sabores() {
+      this.$router.push({
+        name: "Sabores",
+        params: { rol: this.usuario.tipo_usuario },
+      });
+    },
+    locales() {
+      this.$router.push({
+        name: "Locales",
         params: { rol: this.usuario.tipo_usuario },
       });
     },

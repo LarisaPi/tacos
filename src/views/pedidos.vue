@@ -1,70 +1,78 @@
 <template>
   <div class="asignador-container">
     <div class="tablas-superiores">
-      <!-- Pedidos -->
+      <!-- Pedidos pendientes -->
       <div class="tabla pedidos">
         <h3>Pedidos</h3>
         <ul>
-          <li v-for="pedido in pedidos" :key="pedido.id">
-            Pedido #{{ pedido.id }} — {{ pedido.cantidad }} tacos
+          <li v-for="p in pedidos" :key="p.id">
+            Pedido #{{ p.id }} — {{ p.nombre_cliente }}
           </li>
         </ul>
+        <p v-if="!pedidos.length" class="vacio">No hay pedidos pendientes.</p>
       </div>
 
       <!-- Ruleta -->
-      <div class="ruleta">
+      <div class="tabla ruleta">
         <h3>🎡 Ruleta</h3>
         <div class="ruleta-circulo" :class="{ girando: animando }">
           <span class="emoji">🌮</span>
         </div>
-        <button class="boton girar" @click="girarRuleta" :disabled="animando">Girar</button>
-        <div v-if="seleccion.pedido && seleccion.trabajador && !animando" class="resultado">
-          <p>Pedido #{{ seleccion.pedido.id }} asignado a {{ seleccion.trabajador }}</p>
+        <button
+          class="boton girar"
+          @click="girarRuleta"
+          :disabled="animando || !pedidos.length || !vendedores.length"
+        >
+          {{ animando ? "Girando…" : "Girar" }}
+        </button>
+        <div v-if="seleccion.pedido && !animando" class="resultado">
+          Pedido #{{ seleccion.pedido.id }} — {{ seleccion.pedido.nombre_cliente }}
+          <br />
+          Asignado a <strong>{{ seleccion.trabajador }}</strong>
         </div>
       </div>
 
-      <!-- Trabajadores -->
-      <div class="tabla trabajadores">
-        <h3>Trabajadores</h3>
+      <!-- Vendedores -->
+      <div class="tabla vendedores">
+        <h3>Vendedores</h3>
         <ul>
-          <li v-for="(t, i) in trabajadores" :key="i">{{ t }}</li>
+          <li v-for="v in vendedores" :key="v">{{ v }}</li>
         </ul>
+        <p v-if="!vendedores.length" class="vacio">No hay vendedores registrados.</p>
       </div>
     </div>
 
-    <!-- Asignaciones -->
+    <!-- Asignaciones vigentes -->
     <div class="tabla asignaciones">
       <h3>Asignaciones</h3>
-      <table>
+      <table class="asignaciones-table">
         <thead>
           <tr>
             <th>Pedido</th>
-            <th>Trabajador</th>
+            <th>Vendedor</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(a, i) in asignaciones" :key="i">
-            <td>#{{ a.pedido.id }} ({{ a.pedido.cantidad }} tacos)</td>
+            <td>#{{ a.pedido.id }}</td>
             <td>{{ a.trabajador }}</td>
-            <td>{{ a.confirmado ? '✅ Confirmado' : '🕒 Pendiente' }}</td>
             <td>
-              <button
-                v-if="!a.confirmado"
-                class="boton secundario"
-                @click="reasignar(i)"
-              >
+              <span v-if="a.confirmado">✅ Confirmado</span>
+              <span v-else>🕒 Pendiente</span>
+            </td>
+            <td class="acciones-td">
+              <button v-if="!a.confirmado" class="boton secundario" @click="reasignar(i)">
                 Reasignar
               </button>
-              <button
-                v-if="!a.confirmado"
-                class="boton confirmar"
-                @click="confirmar(i)"
-              >
+              <button v-if="!a.confirmado" class="boton confirmar" @click="confirmar(i)">
                 Confirmar
               </button>
             </td>
+          </tr>
+          <tr v-if="!asignaciones.length">
+            <td colspan="4" class="vacio">Sin asignaciones aún.</td>
           </tr>
         </tbody>
       </table>
@@ -73,58 +81,96 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import Swal from 'sweetalert2'
+import { ref, onMounted } from "vue";
+import Swal from "sweetalert2";
 
-const pedidos = ref([
-  { id: 1, cantidad: 100 },
-  { id: 2, cantidad: 50 },
-  { id: 3, cantidad: 200 },
-  { id: 4, cantidad: 90 }
-])
+const API = "http://localhost:3000/api";
 
-const trabajadores = ref(['Juan', 'Pedro', 'Ana', 'María'])
+const pedidos = ref([]);
+const vendedores = ref([]);
+const asignaciones = ref([]);
+const seleccion = ref({ pedido: null, trabajador: null });
+const animando = ref(false);
 
-const asignaciones = ref([])
-const seleccion = ref({ pedido: null, trabajador: null })
-const animando = ref(false)
-
-function girarRuleta() {
-  animando.value = true
-  setTimeout(() => {
-    const pedido = pedidos.value[Math.floor(Math.random() * pedidos.value.length)]
-    const trabajador = trabajadores.value[Math.floor(Math.random() * trabajadores.value.length)]
-    seleccion.value = { pedido, trabajador }
-    asignaciones.value.push({ pedido, trabajador, confirmado: false })
-    animando.value = false
-  }, 1500)
+async function fetchJson(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
+  }
+  return res.json();
 }
 
-function confirmar(index) {
-  Swal.fire({
-    title: '¿Confirmar asignación?',
-    text: `Asignar el pedido #${asignaciones.value[index].pedido.id} a ${asignaciones.value[index].trabajador}`,
-    icon: 'question',
+async function cargarPedidos() {
+  const all = await fetchJson(`${API}/pedidos`);
+  pedidos.value = all
+    .filter((p) => p.estado_id === 1)
+    .map((p) => ({ id: p.id, nombre_cliente: p.nombre_cliente }));
+}
+
+async function cargarVendedores() {
+  vendedores.value = await fetchJson(`${API}/vendedores`);
+}
+
+async function cargarAsignaciones() {
+  const data = await fetchJson(`${API}/asignaciones`);
+  asignaciones.value = data.map((a) => ({
+    pedido: { id: a.pedido_id, nombre_cliente: a.nombre_cliente },
+    trabajador: a.trabajador,
+    confirmado: a.confirmado,
+  }));
+}
+
+onMounted(async () => {
+  try {
+    await Promise.all([cargarPedidos(), cargarVendedores(), cargarAsignaciones()]);
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "No se pudo cargar los datos", "error");
+  }
+});
+
+async function girarRuleta() {
+  animando.value = true;
+  setTimeout(async () => {
+    const pedido = pedidos.value[Math.floor(Math.random() * pedidos.value.length)];
+    const trabajador =
+      vendedores.value[Math.floor(Math.random() * vendedores.value.length)];
+
+    await fetchJson(`${API}/pedidos/asignar/${pedido.id}`, {
+      method: "POST",
+      body: JSON.stringify({ trabajador }),
+    });
+
+    seleccion.value = { pedido, trabajador };
+    await Promise.all([cargarPedidos(), cargarAsignaciones()]);
+    animando.value = false;
+  }, 1400);
+}
+
+async function confirmar(index) {
+  const { pedido, trabajador } = asignaciones.value[index];
+  const { isConfirmed } = await Swal.fire({
+    title: "¿Confirmar asignación?",
+    text: `Pedido #${pedido.id} → ${trabajador}`,
+    icon: "question",
     showCancelButton: true,
-    confirmButtonColor: '#308a00',
-    cancelButtonColor: '#aaa',
-    confirmButtonText: 'Sí, confirmar',
-    cancelButtonText: 'Cancelar'
-  }).then(result => {
-    if (result.isConfirmed) {
-      asignaciones.value[index].confirmado = true
-      Swal.fire({
-        title: '¡Confirmado!',
-        text: 'La asignación ha sido registrada.',
-        icon: 'success'
-      })
-    }
-  })
+    confirmButtonText: "Sí",
+    cancelButtonText: "Cancelar",
+  });
+  if (!isConfirmed) return;
+
+  await fetchJson(`${API}/pedidos/confirmar/${pedido.id}`, { method: "POST" });
+  await Promise.all([cargarPedidos(), cargarAsignaciones()]);
+  Swal.fire("¡Confirmado!", "Asignación registrada.", "success");
 }
 
 function reasignar(index) {
-  const nuevoTrabajador = trabajadores.value[Math.floor(Math.random() * trabajadores.value.length)]
-  asignaciones.value[index].trabajador = nuevoTrabajador
+  const nuevo = vendedores.value[Math.floor(Math.random() * vendedores.value.length)];
+  asignaciones.value[index].trabajador = nuevo;
 }
 </script>
 
@@ -132,114 +178,104 @@ function reasignar(index) {
 .asignador-container {
   display: flex;
   flex-direction: column;
-  font-family: sans-serif;
-  gap: 2rem;
-  padding: 1.5rem;
+  gap: 1.5rem;
+  padding: 1rem;
 }
+
 .tablas-superiores {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
   gap: 1rem;
 }
+
+/* Reducir alto de listas laterales */
+.tabla.pedidos,
+.tabla.vendedores {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
 .tabla {
+  padding: 1rem;
   border: 1px solid #ccc;
   border-radius: 6px;
-  padding: 1rem;
-  width: 30%;
-  background-color: #fdfdfd;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  background: #fff;
 }
+
+.tabla.asignaciones {
+  width: 100%;
+}
+
+.asignaciones-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.asignaciones-table th,
+.asignaciones-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.asignaciones-table th {
+  background: #f0f7ff;
+}
+
 .ruleta {
   text-align: center;
 }
+
 .ruleta-circulo {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   margin: 1rem auto;
-  border-radius: 50%;
   border: 6px solid #e91e63;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #fff0f6;
+  background: #fff0f6;
   transition: transform 1.4s ease;
 }
+
 .ruleta-circulo.girando {
   transform: rotate(1080deg);
 }
-.ruleta .emoji {
-  font-size: 2.5rem;
+
+.emoji {
+  font-size: 2rem;
 }
-.ruleta .resultado {
-  margin-top: 1rem;
-  font-weight: bold;
+
+.resultado {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
   color: #4caf50;
 }
 
-/* Botones globales */
 .boton {
-  padding: 10px 16px;
-  margin: 5px 3px;
-  font-weight: bold;
-  font-size: 0.95rem;
+  padding: 0.4rem 0.8rem;
+  margin: 0.3rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: 0.3s ease;
-  user-select: none;
-  box-shadow: 0 0 6px #0002;
+  font-weight: bold;
 }
 
-/* Estilo de botón Confirmar */
-.confirmar {
-  background-color: #4caf50;
-  color: white;
-}
-.confirmar:hover {
-  background-color: #388e3c;
-  box-shadow: 0 0 10px #388e3ccc;
-}
-
-/* Estilo de botón Reasignar */
-.secundario {
-  background-color: #ff9800;
-  color: white;
-}
-.secundario:hover {
-  background-color: #e68900;
-  box-shadow: 0 0 10px #ffb84d88;
-}
-
-/* Estilo botón Girar */
 .girar {
-  background-color: #2196f3;
-  color: white;
-}
-.girar:hover {
-  background-color: #1976d2;
-  box-shadow: 0 0 10px #2196f388;
+  background: #2196f3;
+  color: #fff;
 }
 
-.asignaciones {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 1rem;
-  background-color: #f0f7ff;
-  border: 1px solid #aad;
-  border-radius: 8px;
+.confirmar {
+  background: #4caf50;
+  color: #fff;
 }
-.asignaciones table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-.asignaciones th,
-.asignaciones td {
-  border: 1px solid #aaa;
-  padding: 0.6rem;
-  text-align: center;
-}
-.asignaciones th {
-  background-color: #cce3ff;
+
+.secundario {
+  background: #ff9800;
+  color: #fff;
 }
 </style>

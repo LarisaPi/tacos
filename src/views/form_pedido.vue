@@ -10,13 +10,13 @@
       </div>
       <div class="campo">
         <label>Teléfono</label>
-        <input type="number" v-model="telefono" placeholder="Escribe tu teléfono..." />
+        <input type="text" v-model="telefono" placeholder="Escribe tu teléfono..." />
       </div>
     </div>
 
     <div class="campo campo-grande">
       <label>Correo electrónico</label>
-      <input type="text" v-model="correo" placeholder="Escribe tu correo..." />
+      <input type="email" v-model="correo" placeholder="Escribe tu correo..." />
     </div>
 
     <!-- Dirección -->
@@ -43,9 +43,15 @@
       </div>
     </div>
 
-    <div class="campo campo-grande">
-      <label>Entre calles</label>
-      <input type="text" v-model="calles" placeholder="Ej. Juárez y Madero" />
+    <div class="grupo">
+      <div class="campo">
+        <label>Colonia</label>
+        <input type="text" v-model="colonia" placeholder="Ej. Centro" />
+      </div>
+      <div class="campo">
+        <label>Entre calles</label>
+        <input type="text" v-model="calles" placeholder="Ej. Juárez y Madero" />
+      </div>
     </div>
 
     <!-- Fecha de entrega -->
@@ -63,47 +69,88 @@
 
     <!-- Confirmación -->
     <div class="acciones">
-      <button class="confirmar" @click="() => showConfirmDialog('confirmar')">Confirmar</button>
+      <button class="confirmar" @click="onConfirm">Confirmar</button>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from "vue";
+import { useCarritoStore } from "../stores/carrito";
+import { useOrderStore } from "../stores/orderStore";
 import Swal from "sweetalert2";
 import { useRouter } from "vue-router";
+
 const router = useRouter();
+const carrito = useCarritoStore();
+const orderStore = useOrderStore();
 
-const showConfirmDialog = (action) => {
-  if (action !== "confirmar") return;
+// Campos v-model
+const nombre = ref("");
+const telefono = ref("");
+const correo = ref("");
+const calle = ref("");
+const ciudad = ref("");
+const cp = ref("");
+const estado = ref("");
+const colonia = ref("");
+const calles = ref("");
+const fecha = ref("");
+const hora = ref("");
 
-  Swal.fire({
-    title: "¿Seguro que quieres confirmar el pedido?",
-    text: "Estás a punto de confirmar el pedido.",
+const onConfirm = async () => {
+  const { isConfirmed } = await Swal.fire({
+    title: "¿Confirmar pedido?",
+    text: "Se enviará tu pedido con los datos proporcionados.",
     icon: "question",
     showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Estoy seguro",
-    cancelButtonText: "Cancelar",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: "Pedido confirmado",
-        text: "El pedido ha sido confirmado.",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then(() => {
-        router.push("/carrito");
-      });
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      Swal.fire({
-        title: "Cancelado",
-        text: "El pedido no fue confirmado.",
-        icon: "info",
-        confirmButtonText: "OK",
-      });
-    }
+    confirmButtonText: "Sí, enviar",
   });
+  if (!isConfirmed) return;
+
+  // Construir productos
+  const productos = carrito.items.map((i) => ({ id_taco: i.id, cantidad: i.qty }));
+
+  // Calcular total usando i.precio
+  const total = carrito.items.reduce((sum, i) => sum + (i.precio ?? 0) * i.qty, 0);
+
+  const payload = {
+    id_cliente: 3,
+    nombre: nombre.value,
+    telefono: telefono.value,
+    correo: correo.value,
+    direccion: {
+      calle: calle.value,
+      colonia: colonia.value,
+      ciudad: ciudad.value,
+      cp: cp.value,
+      estado: estado.value,
+      calles: calles.value,
+    },
+    fecha_entrega: fecha.value,
+    hora_entrega: hora.value,
+    productos,
+    total,
+  };
+
+  try {
+    const res = await fetch("http://localhost:3000/api/pedido", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    await Swal.fire("¡Éxito!", "Tu pedido fue enviado.", "success");
+
+    // Guardar orden y navegar
+    orderStore.setOrder({ id: data.id_pedido, name: nombre.value, total });
+    carrito.vaciarCarrito();
+    router.push({ name: "Pago" });
+  } catch (err) {
+    await Swal.fire("Error", err.message, "error");
+  }
 };
 </script>
 

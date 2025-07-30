@@ -11,25 +11,30 @@
       />
     </div>
 
-    <div class="card-buttons">
-      <button class="edit-btn" @click="onEdit">Editar</button>
-      <!-- Botón Eliminar eliminado -->
+    <div class="card-buttons" v-if="rolValido">
+      <button class="edit-btn" @click="editar(local.id)">Editar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from "vue-router";
+import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
 const props = defineProps({
   local: Object,
-  isHighlighted: Boolean,
 });
 
 const router = useRouter();
+const route = useRoute();
 
-function onEdit() {
-  router.push({ path: "/editar_local", query: { id: props.local.id } });
+const rolValido = computed(() => {
+  const rol = route.params.rol;
+  return ["admin", "vendedor"].includes(rol);
+});
+
+function editar(id) {
+  router.push({ name: "EditLocal", params: { id } });
 }
 </script>
 
@@ -101,15 +106,11 @@ function onEdit() {
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.edit-btn {
   background-color: #4caf50;
   color: white;
 }
+
 .edit-btn:hover {
   background-color: #388e3c;
 }
-
-/* delete-btn ya no se usa */
 </style>

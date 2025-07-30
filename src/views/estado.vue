@@ -1,131 +1,269 @@
 <template>
   <div>
-    <h1>Estado de pedido</h1>
+    <h1>Estado de tus pedidos</h1>
 
-    <div class="progress-container">
-      <div class="progress-steps">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          class="step"
-          :class="{ active: index <= currentStep }"
-        >
-          {{ step }}
+    <div v-for="pedido in pedidos" :key="pedido.id" class="pedido-bloque">
+      <!-- Nombre del cliente -->
+      <h2>Cliente: {{ pedido.nombre_cliente }}</h2>
+
+      <!-- barra de progreso -->
+      <div class="progress-container">
+        <div class="progress-steps">
+          <div
+            v-for="(step, i) in steps"
+            :key="i"
+            class="step"
+            :class="{
+              active:
+                i <=
+                (pedido.estado_id === 5
+                  ? pedido.estado_id_original - 1
+                  : pedido.estado_id - 1),
+            }"
+          >
+            {{ step }}
+          </div>
+          <div class="progress-bar-background"></div>
+          <div
+            class="progress-bar"
+            :style="{
+              width:
+                ((pedido.estado_id === 5
+                  ? pedido.estado_id_original - 1
+                  : pedido.estado_id - 1) /
+                  (steps.length - 1)) *
+                  100 +
+                '%',
+            }"
+          ></div>
         </div>
-        <div class="progress-bar-background"></div>
-        <div
-          class="progress-bar"
-          :style="{ width: (currentStep / (steps.length - 1)) * 100 + '%' }"
-        ></div>
       </div>
+
+      <!-- estado visual -->
+      <p><strong>Estado:</strong> {{ mostrarEstado(pedido) }}</p>
+
+      <!-- botones de acción -->
+      <div class="buttons-row">
+        <button
+          class="cancel-btn"
+          @click="cancelarPedido(pedido)"
+          :disabled="pedido.estado_id >= 4"
+        >
+          Cancelar pedido
+        </button>
+        <button
+          @click="confirmarEstado(pedido)"
+          :disabled="pedido.estado_id >= steps.length"
+        >
+          Siguiente estado
+        </button>
+      </div>
+
+      <!-- detalles del pedido -->
+      <h3>Información del pedido</h3>
+      <p>
+        <strong>Cantidad total:</strong>
+        {{
+          pedido.sabores?.reduce((acc, sabor) => acc + (sabor.cantidad || 0), 0) ?? "N/A"
+        }}
+      </p>
+      <p>
+        <strong>Dirección:</strong>
+        {{ pedido.direccion_calle }}, {{ pedido.direccion_colonia }},
+        {{ pedido.direccion_ciudad }}, CP {{ pedido.direccion_cp }}
+      </p>
+      <p><strong>Teléfono:</strong> {{ pedido.telefono }}</p>
+      <p>
+        <strong>Fecha:</strong>
+        {{ new Date(pedido.fecha).toLocaleString("es-MX") }}
+      </p>
+      <p><strong>Total:</strong> ${{ (pedido.total ?? 0).toFixed(2) }}</p>
+
+      <!-- sabores -->
+      <h3>Sabores</h3>
+      <ul>
+        <li v-for="(sabor, idx) in pedido.sabores" :key="idx">
+          {{ sabor.nombre }} – {{ sabor.cantidad }}
+        </li>
+      </ul>
     </div>
-
-    <button
-      @click="confirmar"
-      id="btn-estado"
-      :disabled="currentStep >= steps.length - 1"
-    >
-      Siguiente estado
-    </button>
-  </div>
-
-  <div>
-    <h3>Informacion del pedido</h3>
-    <span>Tacos de canasta de papa: 50</span> <br>
-<span>Tacos de canasta de papa: 60 </span> <br>
-<span>Tacos de canasta de papa: 40</span> <br>
-<span>A la dirección:</span> <br>
-<span>Calle:   MORELOS NO. 607 NO. A, CENTRO, 36700</span> <br>
-<span>Ciudad:    Guanajuato</span> <br>
-<span>Estado/provincia/zona:    Salamanca</span> <br>
-<span>Número de teléfono:   464.647-7678</span> <br>
-<span>Código postal:   36700</span> <br>
-<span>Código de llamada del país:   +52 123-456-78-90</span> <br>
-<span>País:   México</span>
   </div>
 </template>
 
 <script>
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 export default {
   data() {
     return {
-      currentStep: 0,
-      steps: ['Recibido', 'En Preparación', 'En camino', 'Entregado']
+      steps: ["Recibido", "En Preparación", "En camino", "Entregado"],
+      pedidos: [],
     };
   },
   methods: {
-    confirmar() {
-      if (this.currentStep >= this.steps.length - 1) return;
+    async obtenerPedidos() {
+      try {
+        const userId = 3; // ajusta según tu cliente
+        const res = await fetch(`http://localhost:3000/api/pedidos/usuario/${userId}`);
+        if (!res.ok) throw new Error("Fetch error");
+        const pedidos = await res.json();
 
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: '¿Deseas pasar al siguiente estado del pedido? Esta acción no se puede deshacer.',
-        icon: 'question',
+        // traer sabores de cada pedido
+        await Promise.all(
+          pedidos.map(async (pedido) => {
+            const rs = await fetch(
+              `http://localhost:3000/api/pedidos/${pedido.id}/sabores`
+            );
+            pedido.sabores = rs.ok ? await rs.json() : [];
+          })
+        );
+
+        this.pedidos = pedidos;
+      } catch (err) {
+        console.error("Error al obtener pedidos o sabores:", err);
+      }
+    },
+    async confirmarEstado(pedido) {
+      const siguiente = pedido.estado_id + 1;
+      if (siguiente > this.steps.length) return;
+
+      const { isConfirmed } = await Swal.fire({
+        title: "¿Avanzar al siguiente estado?",
+        text: `"${this.steps[siguiente - 1]}"`,
+        icon: "question",
         showCancelButton: true,
-        confirmButtonColor: 'green',
-        cancelButtonColor: 'red',
-        confirmButtonText: 'Sí, estoy seguro',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.currentStep++;
-        }
+        confirmButtonText: "Sí, avanzar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "green",
+        cancelButtonColor: "red",
       });
-    }
-  }
+      if (!isConfirmed) return;
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/pedidos/${pedido.id}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado_id: siguiente }),
+        });
+        if (!res.ok) throw new Error();
+        pedido.estado_id = siguiente;
+        Swal.fire("¡Estado actualizado!", "", "success");
+      } catch (err) {
+        console.error("Error actualizando estado:", err);
+        Swal.fire("Error", "No pudimos actualizar.", "error");
+      }
+    },
+    async cancelarPedido(pedido) {
+      const { isConfirmed } = await Swal.fire({
+        title: "¿Cancelar este pedido?",
+        text: "Esta acción no se puede deshacer.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, cancelar",
+        cancelButtonText: "No",
+        confirmButtonColor: "red",
+      });
+
+      if (!isConfirmed) return;
+
+      try {
+        // Guardamos el estado actual antes de cancelar
+        pedido.estado_id_original = pedido.estado_id;
+
+        const res = await fetch(`http://localhost:3000/api/pedidos/${pedido.id}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado_id: 5 }), // ← Estado cancelado
+        });
+
+        if (!res.ok) throw new Error();
+
+        pedido.estado_id = 5; // ← Reflejamos el cambio localmente
+        Swal.fire("Cancelado", "El pedido ha sido cancelado.", "success");
+      } catch (err) {
+        console.error("Error cancelando pedido:", err);
+        Swal.fire("Error", "No pudimos cancelar el pedido.", "error");
+      }
+    },
+    mostrarEstado(pedido) {
+      const estados = [
+        "Recibido",
+        "En Preparación",
+        "En camino",
+        "Entregado",
+        "Cancelado",
+      ];
+      const original =
+        pedido.estado_id === 5 ? pedido.estado_id_original || 1 : pedido.estado_id;
+      const textoEstado = estados[original - 1];
+
+      return pedido.estado_id === 5
+        ? `Cancelado (estaba en ${textoEstado})`
+        : textoEstado;
+    },
+  },
+  mounted() {
+    this.obtenerPedidos();
+  },
 };
 </script>
 
 <style scoped>
-.text{
-  font-family: 'roboto', sans-serif;;
+.pedido-bloque {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  border-radius: 10px;
+  background-color: #f8f8f8;
 }
 
-span{
-  font-family: 'roboto', sans-serif;
-  padding-left: 50px;
+.buttons-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-h3{
-  padding-left: 50px;
+.cancel-btn {
+  font-family: "roboto", sans-serif;
+  background-color: #d33;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
 }
 
 button {
-  font-family: 'roboto', sans-serif;
-  display: block;
-  margin: 20px auto;
-  padding: 10px 20px;
+  font-family: "roboto", sans-serif;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 5px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
 }
+
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
+/* progreso */
 .progress-container {
-  width: 100%;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin-bottom: 1rem;
 }
 
 .progress-steps {
-  font-family: 'roboto', sans-serif;
-  position: relative;
+  font-family: "roboto", sans-serif;
   display: flex;
+  position: relative;
   justify-content: space-between;
   align-items: center;
   height: 50px;
 }
 
 .step {
-  font-family: 'roboto', sans-serif;
-  position: relative;
   text-align: center;
   width: 25%;
   color: gray;
@@ -133,8 +271,7 @@ button:disabled {
 }
 
 .step::before {
-  font-family: 'roboto', sans-serif;
-  content: '';
+  content: "";
   display: block;
   width: 20px;
   height: 20px;
@@ -142,7 +279,6 @@ button:disabled {
   border-radius: 50%;
   background-color: white;
   margin: 0 auto 5px auto;
-  z-index: 2;
 }
 
 .step.active {
@@ -162,6 +298,7 @@ button:disabled {
   height: 6px;
   background-color: #ccc;
   z-index: 1;
+  border-radius: 10px;
 }
 
 .progress-bar {
@@ -169,9 +306,20 @@ button:disabled {
   top: 10px;
   left: 0;
   height: 6px;
-  width: 0%;
   background-color: green;
-  transition: width 0.5s;
-  z-index: 2;
+  z-index: 1;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* estilos para sabores igual que párrafos */
+.pedido-bloque ul {
+  list-style: none;
+  padding-left: 50px;
+  font-family: "roboto", sans-serif;
+  margin-bottom: 1rem;
+}
+.pedido-bloque ul li {
+  margin-bottom: 0.5rem;
 }
 </style>

@@ -9,7 +9,11 @@
       </div>
       <div class="campo campo-grande">
         <label>Descripción</label>
-        <input type="text" v-model="descripcion" placeholder="Breve descripción del local..." />
+        <input
+          type="text"
+          v-model="descripcion"
+          placeholder="Breve descripción del local..."
+        />
       </div>
     </div>
 
@@ -48,33 +52,48 @@
 
     <div class="imagenes">
       <div class="imagen-preview">
-        <label>Imagen de Ubicación</label>
-        <input type="file" accept="image/*" @change="onUbicacionChange" />
+        <label for="ubicacionFile" class="input-file-label">🗺️Galería Ubicación</label>
+        <input
+          id="ubicacionFile"
+          type="file"
+          accept="image/*"
+          @change="onUbicacionChange"
+          style="display: none"
+        />
         <div class="preview" v-if="ubicacionPreviewUrl">
           <img :src="ubicacionPreviewUrl" alt="Vista previa ubicación" />
         </div>
       </div>
 
       <div class="imagen-preview">
-        <label>Imagen del Local</label>
-        <input type="file" accept="image/*" @change="onLocalChange" />
+        <label for="localFile" class="input-file-label">🖼️Galería Local</label>
+        <input
+          id="localFile"
+          type="file"
+          accept="image/*"
+          @change="onLocalChange"
+          style="display: none"
+        />
         <div class="preview" v-if="localPreviewUrl">
           <img :src="localPreviewUrl" alt="Vista previa local" />
         </div>
       </div>
     </div>
-
     <div class="acciones">
-      <button class="editar" @click="() => showConfirmDialog('editar')">Editar</button>
-      <button class="eliminar" @click="() => showConfirmDialog('eliminar')">Eliminar</button>
+      <button class="editar" @click="showConfirmDialog('editar')">Editar</button>
+      <button class="eliminar" @click="showConfirmDialog('eliminar')">Eliminar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Swal from "sweetalert2";
-import { useRoute } from "vue-router";
+
+const route = useRoute();
+const router = useRouter();
+const id = route.params.id; // <-- obtener id por params
 
 const nombre = ref("");
 const descripcion = ref("");
@@ -89,87 +108,129 @@ const localFile = ref(null);
 const ubicacionPreviewUrl = ref(null);
 const localPreviewUrl = ref(null);
 
-const route = useRoute();
+onMounted(async () => {
+  if (!id) {
+    Swal.fire("Error", "No se encontró el ID del local.", "error");
+    router.push("/locales");
+    return;
+  }
 
-onMounted(() => {
-  const id = route.query.id;
-  if (id) {
-    nombre.value = "Taco Real Tlaxcala";
-    descripcion.value = "Un local tradicional con tacos de papa y más";
-    calle.value = "Av. Reforma";
-    ciudad.value = "Tlaxcala";
-    codigoPostal.value = "90000";
-    estado.value = "Tlaxcala";
-    entreCalles.value = "Juárez y Allende";
-    colonia.value = "Centro";
-    ubicacionPreviewUrl.value = "https://via.placeholder.com/200x200?text=Ubicación";
-    localPreviewUrl.value = "https://via.placeholder.com/200x200?text=Local";
+  try {
+    const res = await fetch(`/api/locales/${id}`);
+    if (!res.ok) throw new Error("Error al obtener local");
+    const data = await res.json();
+
+    nombre.value = data.nombre_local;
+    descripcion.value = data.descripcion;
+    calle.value = data.calle;
+    ciudad.value = data.ciudad;
+    codigoPostal.value = data.codigo_postal;
+    estado.value = data.estado;
+    entreCalles.value = data.entre_calles;
+    colonia.value = data.colonia;
+    ubicacionPreviewUrl.value = data.imagen_ubicacion;
+    localPreviewUrl.value = data.foto_local;
+  } catch (e) {
+    Swal.fire("Error", "No se pudo cargar el local.", "error");
+    router.push("/locales");
   }
 });
 
-function onUbicacionChange(event) {
-  const file = event.target.files[0];
+function onUbicacionChange(e) {
+  const file = e.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
     ubicacionFile.value = file;
     ubicacionPreviewUrl.value = URL.createObjectURL(file);
-  } else {
-    ubicacionPreviewUrl.value = null;
-    ubicacionFile.value = null;
-    alert("Por favor selecciona una imagen válida para la ubicación.");
   }
 }
 
-function onLocalChange(event) {
-  const file = event.target.files[0];
+function onLocalChange(e) {
+  const file = e.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
     localFile.value = file;
     localPreviewUrl.value = URL.createObjectURL(file);
-  } else {
-    localPreviewUrl.value = null;
-    localFile.value = null;
-    alert("Por favor selecciona una imagen válida para el local.");
   }
 }
 
-function showConfirmDialog(accion) {
-  const opciones = {
-    editar: {
-      title: "¿Seguro que quieres editar?",
-      text: "Estás a punto de modificar los datos.",
-      confirmButtonText: "Sí, editar",
-      successTitle: "¡Editado!",
-      successText: "El local fue actualizado.",
-    },
-    eliminar: {
-      title: "¿Seguro que quieres eliminar?",
-      text: "Esta acción no se puede deshacer.",
-      confirmButtonText: "Sí, eliminar",
-      successTitle: "¡Eliminado!",
-      successText: "El local fue eliminado.",
-    },
-  };
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
 
-  const { title, text, confirmButtonText, successTitle, successText } = opciones[accion];
-
-  Swal.fire({
-    title,
-    text,
+async function guardarCambios() {
+  const result = await Swal.fire({
+    title: "¿Seguro que quieres editar?",
+    text: "Se actualizarán los datos.",
     icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText,
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: successTitle,
-        text: successText,
-        icon: "success",
-      });
-    }
+    confirmButtonText: "Sí, editar",
   });
+  if (!result.isConfirmed) return;
+
+  const [fotoLocalB64, ubicB64] = await Promise.all([
+    fileToBase64(localFile.value),
+    fileToBase64(ubicacionFile.value),
+  ]);
+
+  const body = {
+    nombre: nombre.value,
+    descripcion: descripcion.value,
+    calle: calle.value,
+    ciudad: ciudad.value,
+    codigo_postal: codigoPostal.value,
+    estado: estado.value,
+    entre_calles: entreCalles.value,
+    colonia: colonia.value,
+    fotoLocal: fotoLocalB64 || localPreviewUrl.value,
+    imagenUbicacion: ubicB64 || ubicacionPreviewUrl.value,
+  };
+
+  try {
+    const res = await fetch(`/api/locales/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "No se pudo editar.");
+    }
+
+    Swal.fire("¡Listo!", "El local fue actualizado.", "success");
+    router.push("/locales");
+  } catch (error) {
+    Swal.fire("Error", error.message, "error");
+  }
+}
+
+async function eliminarLocal() {
+  const result = await Swal.fire({
+    title: "¿Seguro que quieres eliminar?",
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+  });
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await fetch(`/api/locales/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "No se pudo eliminar.");
+    }
+    Swal.fire("¡Listo!", "El local fue eliminado.", "success");
+    router.push("/locales");
+  } catch (error) {
+    Swal.fire("Error", error.message, "error");
+  }
 }
 
 onBeforeUnmount(() => {
@@ -179,6 +240,48 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: block;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+  margin: 5px 0 10px 0; /* mismo margen que los inputs de texto */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 950px;
   margin: 20px auto;

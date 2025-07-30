@@ -1,49 +1,35 @@
 <template>
   <div class="comentarios-container">
-    <h2>Comentarios</h2>
+    <h2>Comentarios del local #{{ localId }}</h2>
 
     <div class="nuevo-comentario">
-      <label for="comentario">Agregar comentario:</label>
-      <input
-        id="comentario"
-        v-model="nuevoComentario.texto"
-        placeholder="Escribe tu comentario..."
-      />
-
+      <input v-model="nuevo.texto" placeholder="Escribe tu comentario..." />
       <div class="estrellas">
         <span
           v-for="i in 5"
           :key="i"
           class="estrella"
-          :class="{ activa: i <= nuevoComentario.calificacion }"
-          @click="nuevoComentario.calificacion = i"
-        >★</span>
+          :class="{ activa: i <= nuevo.calificacion }"
+          @click="nuevo.calificacion = i"
+          >★</span
+        >
       </div>
-
       <button @click="agregarComentario">Agregar comentario</button>
     </div>
 
     <div class="lista-comentarios">
-      <div
-        v-for="(comentario, index) in comentarios"
-        :key="index"
-        class="comentario"
-      >
-        <div class="comentario-header">
-          <p>{{ comentario.texto }}</p>
-          <button class="eliminar" @click="eliminarComentario(index)">🗑</button>
-        </div>
-
-        <!-- Estrellas interactivas por cada comentario -->
+      <div v-for="c in comentarios" :key="c.id" class="comentario">
+        <p>{{ c.texto }}</p>
         <div class="estrellas">
           <span
             v-for="i in 5"
             :key="i"
             class="estrella"
-            :class="{ activa: i <= comentario.calificacionInteractiva }"
-            @click="calificarComentario(index, i)"
-          >★</span>
+            :class="{ activa: i <= c.calificacion }"
+            >★</span
+          >
         </div>
+        <button class="eliminar" @click="eliminarComentario(c.id)">🗑</button>
       </div>
     </div>
   </div>
@@ -51,52 +37,46 @@
 
 <script>
 export default {
-  name: 'Comentarios',
+  name: "ComentariosView",
+  props: { localId: { type: Number, required: true } },
   data() {
     return {
-      nuevoComentario: {
-        texto: '',
-        calificacion: 0,
-      },
-      comentarios: [
-        {
-          texto: 'Excelente producto, llegó a tiempo y funciona perfectamente.',
-          calificacion: 5,
-          calificacionInteractiva: 5,
-        },
-        {
-          texto: 'No era lo que esperaba, pero el soporte fue muy amable.',
-          calificacion: 3,
-          calificacionInteractiva: 3,
-        },
-        {
-          texto: 'Me encantó el diseño y la calidad. Lo recomiendo totalmente.',
-          calificacion: 4,
-          calificacionInteractiva: 4,
-        },
-      ],
+      nuevo: { texto: "", calificacion: 0 },
+      comentarios: [],
     };
   },
   methods: {
+    fetchComentarios() {
+      fetch(`/api/locales/${this.localId}/comentarios`)
+        .then((r) => r.json())
+        .then((data) => (this.comentarios = data))
+        .catch(console.error);
+    },
     agregarComentario() {
-      if (this.nuevoComentario.texto.trim()) {
-        this.comentarios.push({
-          texto: this.nuevoComentario.texto,
-          calificacion: this.nuevoComentario.calificacion,
-          calificacionInteractiva: this.nuevoComentario.calificacion,
-        });
-        this.nuevoComentario.texto = '';
-        this.nuevoComentario.calificacion = 0;
-      } else {
-        alert('Por favor escribe un comentario.');
-      }
+      if (!this.nuevo.texto.trim()) return alert("Escribe tu comentario.");
+      fetch(`/api/locales/${this.localId}/comentarios`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.nuevo),
+      })
+        .then((r) => r.json())
+        .then((nc) => {
+          this.comentarios.unshift(nc);
+          this.nuevo.texto = "";
+          this.nuevo.calificacion = 0;
+        })
+        .catch(console.error);
     },
-    eliminarComentario(index) {
-      this.comentarios.splice(index, 1);
+    eliminarComentario(id) {
+      fetch(`/api/comentarios/${id}`, { method: "DELETE" })
+        .then(() => {
+          this.comentarios = this.comentarios.filter((c) => c.id !== id);
+        })
+        .catch(console.error);
     },
-    calificarComentario(index, nuevaCalificacion) {
-      this.comentarios[index].calificacionInteractiva = nuevaCalificacion;
-    },
+  },
+  mounted() {
+    this.fetchComentarios();
   },
 };
 </script>
@@ -105,7 +85,7 @@ export default {
 .comentarios-container {
   max-width: 600px;
   margin: 2rem auto;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   padding: 1rem;
   background-color: #fff;
   border-radius: 8px;

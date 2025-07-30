@@ -5,13 +5,16 @@
       <div class="search-bar">
         <input v-model="search" placeholder="Buscar..." />
         <button @click="searchLocales">Buscar</button>
+        <router-link to="/registrar_local">
+          <button>Registrar Nuevo</button>
+        </router-link>
       </div>
     </header>
 
     <div class="card-grid">
       <Locales
         v-for="(item, index) in filteredLocales"
-        :key="index"
+        :key="item.id"
         :local="item"
         :isHighlighted="index % 2 === 1"
       />
@@ -20,50 +23,15 @@
 </template>
 
 <script>
-import Locales from "../components/locales.vue";
+import Locales from "../components/Locales.vue";
 
 export default {
   name: "LocalesView",
-  components: {
-    Locales,
-  },
+  components: { Locales },
   data() {
     return {
       search: "",
-      locales: [
-        {
-          title: "Taco papa con pistache",
-          image: "../assets/img/tacostlaxcala.png",
-          description:
-            "Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar",
-        },
-        {
-          title: "Taco de carnitas",
-          image: "https://example.com/taco.jpg",
-          description:
-            "Carnitas tradicionales servidas en tortilla de maíz con salsa y cebolla.",
-        },
-        {
-          title: "Taco árabe",
-          image: "https://example.com/taco2.jpg",
-          description: "Estilo Puebla, carne marinada en pan pita.",
-        },
-        {
-          title: "Taco de barbacoa",
-          image: "https://example.com/taco3.jpg",
-          description: "Cocido al horno en pencas de maguey.",
-        },
-        {
-          title: "Taco de asada",
-          image: "https://example.com/taco4.jpg",
-          description: "Con carne asada, cebolla, y guacamole.",
-        },
-        {
-          title: "Taco de birria",
-          image: "https://example.com/taco5.jpg",
-          description: "Deliciosa birria jugosa en tortilla dorada.",
-        },
-      ],
+      locales: [],
     };
   },
   computed: {
@@ -75,8 +43,30 @@ export default {
   },
   methods: {
     searchLocales() {
-      // Funcionalidad opcional
+      // Si en el futuro quieres buscar en el backend, haz la petición aquí
     },
+    fetchLocales() {
+      fetch("/api/locales")
+        .then((res) => res.json())
+        .then((data) => {
+          this.locales = data.map((item) => ({
+            id: item.id,
+            title: item.nombre_local,
+            description: item.descripcion,
+            street: item.calle,
+            neighborhood: item.colonia,
+            city: item.ciudad,
+            state: item.estado,
+            zip: item.codigo_postal,
+            fotoLocal: item.foto_local,
+            imagenUbicacion: item.imagen_ubicacion,
+          }));
+        })
+        .catch((err) => console.error("Error al cargar locales:", err));
+    },
+  },
+  mounted() {
+    this.fetchLocales();
   },
 };
 </script>
@@ -102,11 +92,11 @@ h1 {
 .search-bar {
   display: flex;
   align-items: center;
-  background: white;
+  background: #fff;
   border-radius: 10px;
   padding: 3px 8px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-  height: 38px; /* Compacto y alineado */
+  height: 38px;
 }
 
 .search-bar input {
@@ -121,7 +111,7 @@ h1 {
 .search-bar button {
   padding: 6px 15px;
   background-color: #00aaff;
-  color: white;
+  color: #fff;
   border-radius: 10px;
   border: none;
   cursor: pointer;

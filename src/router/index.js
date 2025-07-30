@@ -15,52 +15,72 @@ import Registrar_Taco from '../views/reg_taco.vue'
 import Registrar_Local from '../views/reg_local.vue'
 import Sabores from '../views/sabores.vue'
 import Usuario from '../views/usuario.vue'
-import comentarios from '../views/comentarios.vue'
-import reg_usuario from '../views/reg_usuario.vue'
-import pedidos_pendientes from '../views/pedidos_pendientes.vue'
-
+import Comentarios from '../views/comentarios.vue'
+import Reg_Usuario from '../views/reg_usuario.vue'
+import Edit_Inicio from '../views/editar_inicio.vue'
+import Pago from '../views/pago.vue'
+import Tabla_Pedidos from '../views/tabla_pedidos.vue'
 
 const routes = [
- {
+   {
   path: "/inicio/:rol?",
   name: "Inicio",
   component: Inicio,
   props: route => ({ rolUsuario: route.params.rol })
 },
+
+  {
+    path: '/pago',
+    name: 'Pago',
+    component: Pago,
+    props: route => ({
+      order: route.query.order ? JSON.parse(route.query.order) : null
+    })
+  },
+
   { path: '/carrito', component: Carrito },
   { path: '/cotizar', component: Cotizar },
-  { path: '/sabores', component: Sabores },
-  { path: '/editar_taco', component: Editar_Taco },
- { 
-  path: '/edit_usuario/:id', 
-  name: 'EditUsuario',  // 👈 este nombre es el que usas en this.$router.push()
-  component: Editar_Usuario, 
-  props: true 
-},
-  { path: '/editar_local', component: Editar_Local },
+  {  path: "/sabores/:rol?",
+  name: "Sabores",
+  component: Sabores,
+  props: route => ({ rolUsuario: route.params.rol })
+   },
+ { path: '/editar-taco/:id', component: Editar_Taco, props: true },
+  {
+    path: '/edit_usuario/:id',
+    name: 'EditUsuario',
+    component: Editar_Usuario,
+    props: true
+  },
+{ path: '/editar-local/:id', name: 'EditLocal', component: Editar_Local, props: true },
   { path: '/estado', component: Estado },
   { path: '/form_pedido', component: FormPedido },
   { path: '/inicio_sesion', component: Inicio_Sesion },
-  { path: '/locales', component: Locales },
+  {  path: "/locales/:rol?",
+  name: "Locales",
+  component: Locales,
+  props: route => ({ rolUsuario: route.params.rol })
+   },
   { path: '/pedidos', component: Pedidos },
- {
+  {
     path: '/perfil/:id',
     name: 'Perfil',
     component: Perfil,
     props: true
   },
-
   { path: '/registrar_taco', component: Registrar_Taco },
   { path: '/registrar_local', component: Registrar_Local },
   { path: '/usuario', component: Usuario },
-  { path: '/comentarios', component: comentarios },
-  { path: '/reg_usuario', component: reg_usuario },
-  { path: '/pedidos_pendintes', component: pedidos_pendientes },
+  { path: '/comentarios', component: Comentarios },
+  { path: '/reg_usuario', component: Reg_Usuario },
+  { path: '/editar_inicio', component: Edit_Inicio },
+  { path: '/tabla_pedidos', component: Tabla_Pedidos },
+
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(), // 👈 este es el cambio clave
-  routes,
+  history: createWebHashHistory(),
+  routes
 })
 
 export default router

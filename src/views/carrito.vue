@@ -23,39 +23,65 @@
 </template>
 
 <script>
-import FoodCard from '../components/FoodCard.vue'
-import { useCarritoStore } from '../stores/carrito'
-import { useRouter } from 'vue-router'
+import FoodCard from "../components/FoodCard.vue";
+import { useCarritoStore } from "../stores/carrito";
+import { useRouter } from "vue-router";
+import Swal from "sweetalert2";
 
 export default {
   components: { FoodCard },
   setup() {
-    const carrito = useCarritoStore()
-  const router = useRouter()
-  const realizarPedido = () => {
-    router.push('/form_pedido')}
+    const carrito = useCarritoStore();
+    const router = useRouter();
+
+    const realizarPedido = async () => {
+      if (carrito.items.length === 0) {
+        await Swal.fire({
+          icon: "warning",
+          title: "El carrito está vacío",
+          text: "Agrega al menos un producto antes de continuar.",
+        });
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: "¿Continuar al formulario?",
+        text: "Se te redirigirá para completar los datos de tu pedido.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Sí, continuar",
+        cancelButtonText: "Cancelar",
+      });
+
+      if (result.isConfirmed) {
+        router.push({ path: "/form_pedido" });
+      }
+    };
 
     const removeItem = (index) => {
-      carrito.eliminarItem(index)
-    }
+      carrito.eliminarItem(index);
+    };
 
     const updateQty = (index, qty) => {
       if (qty >= 50) {
-        carrito.actualizarCantidad(index, qty)
+        carrito.actualizarCantidad(index, qty);
       } else {
-        alert('La cantidad mínima es 50 por sabor.')
+        Swal.fire({
+          icon: "info",
+          title: "Cantidad mínima",
+          text: "La cantidad mínima es 50 por sabor.",
+        });
       }
-    }
+    };
 
     return {
       carrito,
       realizarPedido,
       removeItem,
-      updateQty
-    }
+      updateQty,
+    };
   },
-}
-
+};
 </script>
 
 <style scoped>

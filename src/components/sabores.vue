@@ -3,9 +3,10 @@
     <img :src="food.image" alt="Comida" />
     <h3>{{ food.title }}</h3>
     <p>{{ food.description }}</p>
+
     <div class="buttons">
       <button @click.stop="handleAdd">Agregar</button>
-      <button @click.stop="handleEdit">Editar</button>
+      <button v-if="rolValido" @click.stop="handleEdit">Editar</button>
     </div>
   </div>
 </template>
@@ -16,6 +17,12 @@ export default {
   props: {
     food: Object,
     isHighlighted: Boolean,
+  },
+  computed: {
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return ["admin", "vendedor"].includes(rol);
+    },
   },
   methods: {
     handleAdd() {
@@ -40,7 +47,7 @@ export default {
   transition: transform 0.2s;
   font-size: 14px;
   background-color: white;
-  min-height: 500px; /* estilo espejo largo */
+  min-height: 500px;
   height: 100%;
 }
 

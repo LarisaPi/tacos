@@ -1,82 +1,95 @@
 <template>
   <div class="app-container">
     <header>
-      <h1>chiquihuitl sabor</h1>
+      <h1>Chiquihuitl Sabores</h1>
       <div class="search-bar">
-        <input v-model="search" placeholder="Buscar..." />
-        <button>Buscar</button>
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Buscar..."
+          aria-label="Buscar sabores"
+        />
+        <button @click.prevent="handleSearch">Buscar</button>
       </div>
     </header>
 
-    <div class="card-grid">
+    <section class="card-grid">
+      <div v-if="isLoading" class="status">Cargando sabores…</div>
+      <div v-else-if="error" class="status error">{{ error }}</div>
+      <div v-else-if="!filteredFoods.length" class="status">
+        No se encontraron sabores.
+      </div>
+
       <sabores
+        v-else
         v-for="(item, index) in filteredFoods"
-        :key="index"
+        :key="item.id"
         :food="item"
         :isHighlighted="index % 2 === 1"
         @add="handleAdd"
         @edit="handleEdit"
       />
-    </div>
+    </section>
   </div>
 </template>
 
 <script>
 import sabores from "../components/sabores.vue";
-import { useCarritoStore } from '../stores/carrito';
+import { useCarritoStore } from "../stores/carrito";
+import tacoPlaceholder from "../assets/img/taco.png";
 
 export default {
-  components: {
-    sabores,
-  },
+  name: "ListarSabores",
+  components: { sabores },
   data() {
     return {
       search: "",
-      foods: [
-        {
-          title: "Taco papa con pistache",
-          image: new URL("../assets/img/tacostlaxcala.png", import.meta.url).href,
-          description:
-            "Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar",
-        },
-        {
-          title: "Taco de papas",
-          image: new URL("../assets/img/tacospapa.jpg", import.meta.url).href,
-          description:
-            "Una mezcla deliciosa de papas fritas con especias en tortilla de maíz",
-        },
-        {
-          title: "Taco salsa roja",
-          image: new URL("../assets/img/tacosalsa.jpg", import.meta.url).href,
-          description: "Tortilla rellena de guiso con salsa roja casera",
-        },
-        {
-          title: "Taco tradicional",
-          image: new URL("../assets/img/tacostlaxcala.png", import.meta.url).href,
-          description: "Receta tradicional de Tlaxcala con ingredientes locales",
-        },
-        {
-          title: "Taco especial",
-          image: new URL("../assets/img/tacosalsa.jpg", import.meta.url).href,
-          description: "Combinación especial de ingredientes para los más exigentes",
-        },
-      ],
+      foods: [],
+      isLoading: false,
+      error: null,
     };
   },
   computed: {
     filteredFoods() {
-      return this.foods.filter((food) =>
-        food.title.toLowerCase().includes(this.search.toLowerCase())
-      );
+      const term = this.search.trim().toLowerCase();
+      if (!term) return this.foods;
+      return this.foods.filter((f) => f.title.toLowerCase().includes(term));
     },
   },
   methods: {
-  handleAdd(food) {
-    const carrito = useCarritoStore()
-    carrito.agregarAlCarrito(food)
-    // sin redirección
-  }
-},
+    handleSearch() {
+      // búsqueda reactiva
+    },
+    async fetchFoods() {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const res = await fetch("/api/tacos");
+        if (!res.ok) throw new Error("Error al cargar sabores");
+        const data = await res.json();
+        this.foods = data.map((item) => ({
+          id: item.id,
+          title: item.sabor,
+          description: item.descripcion,
+          image: item.imagen || tacoPlaceholder,
+        }));
+      } catch (e) {
+        this.error = e.message;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    handleAdd(food) {
+      const carrito = useCarritoStore();
+      carrito.agregarAlCarrito(food);
+    },
+    handleEdit(food) {
+      this.$router.push(`/editar-taco/${food.id}`);
+    },
+  },
+  mounted() {
+    this.fetchFoods();
+  },
 };
 </script>
 
@@ -85,7 +98,7 @@ export default {
   min-height: 100vh;
   padding: 20px;
   font-family: sans-serif;
-  overflow-x: hidden;
+  background: #f5f5f5;
 }
 
 header {
@@ -93,8 +106,8 @@ header {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
   gap: 10px;
+  margin-bottom: 30px;
 }
 
 .search-bar {
@@ -109,10 +122,10 @@ header {
 }
 
 .search-bar input {
+  flex: 1;
   padding: 10px;
   border-radius: 10px;
   border: none;
-  width: 100%;
   outline: none;
 }
 
@@ -120,11 +133,10 @@ header {
   padding: 10px 20px;
   background-color: #81c81e;
   color: white;
-  border-radius: 10px;
   border: none;
+  border-radius: 10px;
   cursor: pointer;
   margin-left: 10px;
-  white-space: nowrap;
 }
 
 .card-grid {
@@ -133,14 +145,23 @@ header {
   gap: 20px;
 }
 
-/* Responsivo para tablets */
+.status {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+  font-size: 1.1rem;
+}
+
+.status.error {
+  color: #d33;
+}
+
 @media (max-width: 1024px) {
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Responsivo para móviles */
 @media (max-width: 600px) {
   .card-grid {
     grid-template-columns: 1fr;

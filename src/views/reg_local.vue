@@ -9,7 +9,11 @@
       </div>
       <div class="campo campo-grande">
         <label>Descripción</label>
-        <input type="text" v-model="descripcion" placeholder="Breve descripción del local..." />
+        <input
+          type="text"
+          v-model="descripcion"
+          placeholder="Breve descripción del local..."
+        />
       </div>
     </div>
 
@@ -48,16 +52,28 @@
 
     <div class="imagenes">
       <div class="imagen-preview">
-        <label>Imagen de Ubicación</label>
-        <input type="file" accept="image/*" @change="onUbicacionChange" />
+        <label for="ubicacionFile" class="input-file-label">🗺️Galería Ubicación</label>
+        <input
+          id="ubicacionFile"
+          type="file"
+          accept="image/*"
+          @change="onUbicacionChange"
+          style="display: none"
+        />
         <div class="preview" v-if="ubicacionPreviewUrl">
           <img :src="ubicacionPreviewUrl" alt="Vista previa ubicación" />
         </div>
       </div>
 
       <div class="imagen-preview">
-        <label>Imagen del Local</label>
-        <input type="file" accept="image/*" @change="onLocalChange" />
+        <label for="localFile" class="input-file-label">🖼️Galería Local</label>
+        <input
+          id="localFile"
+          type="file"
+          accept="image/*"
+          @change="onLocalChange"
+          style="display: none"
+        />
         <div class="preview" v-if="localPreviewUrl">
           <img :src="localPreviewUrl" alt="Vista previa local" />
         </div>
@@ -95,29 +111,27 @@ export default {
     onUbicacionChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.ubicacionPreviewUrl) URL.revokeObjectURL(this.ubicacionPreviewUrl);
         this.ubicacionFile = file;
         this.ubicacionPreviewUrl = URL.createObjectURL(file);
       } else {
-        this.ubicacionPreviewUrl = null;
         this.ubicacionFile = null;
-        alert("Por favor selecciona una imagen válida para la ubicación.");
+        this.ubicacionPreviewUrl = null;
+        Swal.fire("Error", "Selecciona una imagen válida para la ubicación.", "warning");
       }
     },
     onLocalChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.localPreviewUrl) URL.revokeObjectURL(this.localPreviewUrl);
         this.localFile = file;
         this.localPreviewUrl = URL.createObjectURL(file);
       } else {
-        this.localPreviewUrl = null;
         this.localFile = null;
-        alert("Por favor selecciona una imagen válida para el local.");
+        this.localPreviewUrl = null;
+        Swal.fire("Error", "Selecciona una imagen válida para el local.", "warning");
       }
     },
-    showConfirmDialog() {
-      Swal.fire({
+    async showConfirmDialog() {
+      const confirm = await Swal.fire({
         title: "¿Deseas registrar este local?",
         text: "Se guardarán los datos ingresados.",
         icon: "question",
@@ -126,16 +140,74 @@ export default {
         cancelButtonColor: "#aaa",
         confirmButtonText: "Sí, registrar",
         cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            title: "¡Registrado!",
-            text: "El local ha sido registrado exitosamente.",
-            icon: "success",
-          });
-          // Aquí puedes agregar la lógica para enviar los datos al backend
-        }
       });
+
+      if (!confirm.isConfirmed) return;
+
+      try {
+        const [fotoLocalBase64, ubicacionBase64] = await Promise.all([
+          this.fileToBase64(this.localFile),
+          this.fileToBase64(this.ubicacionFile),
+        ]);
+
+        const data = {
+          nombre: this.nombre,
+          descripcion: this.descripcion,
+          calle: this.calle,
+          ciudad: this.ciudad,
+          codigo_postal: this.codigoPostal,
+          estado: this.estado,
+          entre_calles: this.entreCalles,
+          colonia: this.colonia,
+          // ¡aquí pasamos camelCase!
+          fotoLocal: fotoLocalBase64,
+          imagenUbicacion: ubicacionBase64,
+          fk_vendedor: 1,
+        };
+
+        const res = await fetch("/api/locales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          Swal.fire(
+            "¡Registrado!",
+            "El local se ha registrado correctamente.",
+            "success"
+          );
+          this.resetForm();
+        } else {
+          throw new Error(result.error || "No se pudo registrar el local.");
+        }
+      } catch (error) {
+        console.error("Error al registrar:", error);
+        Swal.fire("Error", error.message, "error");
+      }
+    },
+    fileToBase64(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    },
+    resetForm() {
+      this.nombre = "";
+      this.descripcion = "";
+      this.calle = "";
+      this.ciudad = "";
+      this.codigoPostal = "";
+      this.estado = "";
+      this.entreCalles = "";
+      this.colonia = "";
+      this.ubicacionFile = null;
+      this.ubicacionPreviewUrl = null;
+      this.localFile = null;
+      this.localPreviewUrl = null;
     },
   },
   beforeUnmount() {
@@ -146,6 +218,48 @@ export default {
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: block;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+  margin: 5px 0 10px 0; /* mismo margen que los inputs de texto */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 950px;
   margin: 20px auto;
