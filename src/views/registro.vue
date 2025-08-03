@@ -8,39 +8,26 @@
           </div>
 
           <div class="form-container">
-            <h2 class="title">Inicio de sesión</h2>
+          <br>
+            <h2 class="title">Registro</h2>
 
-            <label class="label" for="correo_electronico">Correo electrónico</label>
+            <label class="label" for="email">Correo electrónico</label>
             <input
-              id="correo_electronico"
-              v-model="correo_electronico"
+              id="email"
               type="email"
               placeholder="Correo electrónico"
               class="input"
             />
 
-            <label class="label" for="contrasena">Contraseña</label>
-            <input
-              id="contrasena"
-              v-model="contrasena"
-              type="password"
-              placeholder="Contraseña"
-              class="input"
-            />
+            <label class="label" for="password">Contraseña</label>
+            <input id="password" type="password" placeholder="Contraseña" class="input" />
 
-            <button class="button primary" @click="login()">Ingresar</button>
-
+            <router-link to="/reg_usuario" class="button primary"> Ingresar </router-link>
             <div class="divider">
               <div class="line"></div>
               <span class="or-text">o</span>
               <div class="line"></div>
             </div>
-
-            <router-link to="/reg_usuario" class="button secondary">
-              Registrarse
-            </router-link>
-
-            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
           </div>
         </div>
       </div>
@@ -50,63 +37,9 @@
 
 <script>
 export default {
-  name: "Login",
-  data() {
-    return {
-      correo_electronico: "",
-      contrasena: "",
-      errorMessage: "",
-    };
-  },
-  methods: {
-    async login() {
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            correo_electronico: this.correo_electronico,
-            contrasena: this.contrasena,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          // 1. Guardar usuario en localStorage
-          localStorage.setItem(
-            "currentUser",
-            JSON.stringify({
-              id: data.userId,
-              role: data.role,
-              nombre: data.nombre,
-            })
-          );
-
-          // 2. Determinar destino (redirect o perfil)
-          const destino = this.$route.query.redirect
-            ? this.$route.query.redirect
-            : { name: "Perfil", params: { id: data.userId } };
-
-          // 3. Navegar y recargar para actualizar la Navbar
-          this.$router
-            .push(destino)
-            .then(() => window.location.reload())
-            .catch((err) =>
-              console.error("Error durante la navegación:", err)
-            );
-        } else {
-          this.errorMessage = data.message || "Error al iniciar sesión";
-        }
-      } catch (error) {
-        this.errorMessage = "Error de red o del servidor";
-      }
-    },
-  },
+  name: "Sabores",
 };
 </script>
-
-
 <style scoped>
 .container {
   display: flex;
@@ -152,7 +85,7 @@ export default {
 
 .form-container {
   width: 50%;
-  background-color: #edba52;
+  background-color: #22c55e;
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -183,7 +116,7 @@ export default {
 }
 
 .input::placeholder {
-  color: #c1c2be;
+  color: #bbf7d0;
 }
 
 .button {
@@ -203,26 +136,16 @@ export default {
 }
 
 .primary:hover {
-  background-color: #3b5c69;
+  background-color: #e2962c;
 }
-.button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
-  font-weight: bold;
-  transition: background-color 0.3s;
-  margin-bottom: 1.5rem;
-  border: none;
-  cursor: pointer;
-}
+
 .secondary {
   background-color: rgb(148, 97, 10);
   color: rgb(14, 14, 14);
-  text-align: center;
-  text-decoration: none;
 }
 
 .secondary:hover {
-  background-color: #3b5c69;
+  background-color: #1f2937;
 }
 
 .divider {
@@ -233,14 +156,14 @@ export default {
 }
 
 .line {
-  border-top: 1px solid #080808;
+  border-top: 1px solid #86efac;
   width: 33%;
 }
 
 .or-text {
   margin: 0 0.5rem;
   font-size: 0.875rem;
-  color: #090909;
+  color: #d1fae5;
 }
 
 @media (max-width: 768px) {

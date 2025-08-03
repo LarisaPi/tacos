@@ -17,6 +17,10 @@
       />
     </div>
 
+    <!-- Galería -->
+    <h3>Galería (6 bloques)</h3>
+
+    <!-- Imagen de Portada (reubicada aquí) -->
     <div class="campo">
       <label class="input-file-label" for="imagenPortada">🖼️ Imagen de Portada</label>
       <input
@@ -31,8 +35,7 @@
       </div>
     </div>
 
-    <!-- Galería -->
-    <h3>Galería (6 bloques)</h3>
+    <!-- Bloques de galería -->
     <div class="grupo" v-for="(item, i) in galeria" :key="i">
       <div class="campo">
         <label>Texto bloque {{ i + 1 }}</label>
@@ -40,8 +43,16 @@
       </div>
 
       <div class="campo">
-        <label>Imagen bloque {{ i + 1 }}</label>
-        <input type="file" accept="image/*" @change="onGaleriaChange($event, i)" />
+        <label class="input-file-label" :for="'imagenGaleria' + i"
+          >🖼️ Imagen bloque {{ i + 1 }}</label
+        >
+        <input
+          :id="'imagenGaleria' + i"
+          type="file"
+          accept="image/*"
+          @change="onGaleriaChange($event, i)"
+          style="display: none"
+        />
         <div class="preview" v-if="item.previewUrl">
           <img :src="item.previewUrl" :alt="'Vista previa galería ' + (i + 1)" />
         </div>
@@ -207,8 +218,8 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
-  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+  margin: 5px 5px 10px -5px;
+  width: 100%;
 }
 
 input[type="text"],
@@ -222,20 +233,20 @@ input[type="file"] {
 
 /* Estilo del botón de archivo personalizado */
 .input-file-label {
-  display: flex; /* para controlar alineación interna */
-  align-items: center; /* centra verticalmente */
-  justify-content: center; /* centra el ícono horizontalmente */
-  width: 100%; /* que ocupe todo el ancho disponible */
-  max-width: 100%; /* para no salirse */
-  padding: 12px 0; /* padding arriba/abajo, nada a los lados */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 0;
   background-color: #eee;
   border: 1px solid #bbb;
   border-radius: 6px;
-  font-size: 20px; /* tamaño del ícono */
+  font-size: 20px;
   cursor: pointer;
   margin-top: -1px;
-  margin-left: 0; /* quito margen izquierdo para que quede alineado */
-  box-sizing: border-box; /* para que padding y border no agranden el ancho */
+  margin-left: 0;
+  box-sizing: border-box;
   transition: background-color 0.2s ease;
 }
 

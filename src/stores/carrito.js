@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 
-// Recuperar desde localStorage
-const savedItems = JSON.parse(localStorage.getItem('carrito_items')) || []
+// 🛠️ Normalizamos los ítems recuperados de localStorage
+const rawItems = JSON.parse(localStorage.getItem('carrito_items')) || []
+
+const savedItems = rawItems.map(item => {
+  const qtyValido = typeof item.qty === 'number' && item.qty >= 50
+  return {
+    ...item,
+    qty: qtyValido ? item.qty : 50
+  }
+})
 
 export const useCarritoStore = defineStore('carrito', {
   state: () => ({
@@ -12,7 +20,8 @@ export const useCarritoStore = defineStore('carrito', {
     agregarAlCarrito(food) {
       if (food.qty < 50) return // Evita agregar cantidades menores a 50
 
-      const existe = this.items.find(item => item.title === food.title)
+      const existe = this.items.find(item => item.id === food.id)
+
       if (!existe) {
         this.items.push({ ...food })
         this.guardarEnLocalStorage()
@@ -29,6 +38,10 @@ export const useCarritoStore = defineStore('carrito', {
     },
     guardarEnLocalStorage() {
       localStorage.setItem('carrito_items', JSON.stringify(this.items))
+    },
+    vaciarCarrito() {
+      this.items = []
+      this.guardarEnLocalStorage()
     }
   }
 })

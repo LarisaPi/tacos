@@ -31,18 +31,9 @@
 
     <div class="grupo">
       <div class="campo">
-        <label>Código Postal</label>
-        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
-      </div>
-      <div class="campo">
         <label>Estado / Provincia / Zona</label>
         <input type="text" v-model="estado" placeholder="Ej. CDMX" />
       </div>
-    </div>
-
-    <div class="campo">
-      <label>Entre calles</label>
-      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
     </div>
 
     <div class="campo">
@@ -96,9 +87,7 @@ export default {
       nombre: "",
       calle: "",
       ciudad: "",
-      codigoPostal: "",
       estado: "",
-      entreCalles: "",
       colonia: "",
       descripcion: "",
       ubicacionFile: null,
@@ -155,9 +144,7 @@ export default {
           descripcion: this.descripcion,
           calle: this.calle,
           ciudad: this.ciudad,
-          codigo_postal: this.codigoPostal,
           estado: this.estado,
-          entre_calles: this.entreCalles,
           colonia: this.colonia,
           // ¡aquí pasamos camelCase!
           fotoLocal: fotoLocalBase64,
@@ -200,9 +187,7 @@ export default {
       this.descripcion = "";
       this.calle = "";
       this.ciudad = "";
-      this.codigoPostal = "";
       this.estado = "";
-      this.entreCalles = "";
       this.colonia = "";
       this.ubicacionFile = null;
       this.ubicacionPreviewUrl = null;

@@ -9,7 +9,9 @@
             Pedido #{{ p.id }} — {{ p.nombre_cliente }}
           </li>
         </ul>
-        <p v-if="!pedidos.length" class="vacio">No hay pedidos pendientes.</p>
+        <p v-if="!pedidos.length" class="vacio">
+          No hay pedidos pendientes.
+        </p>
       </div>
 
       <!-- Ruleta -->
@@ -23,7 +25,7 @@
           @click="girarRuleta"
           :disabled="animando || !pedidos.length || !vendedores.length"
         >
-          {{ animando ? "Girando…" : "Girar" }}
+          {{ animando ? 'Girando…' : 'Girar' }}
         </button>
         <div v-if="seleccion.pedido && !animando" class="resultado">
           Pedido #{{ seleccion.pedido.id }} — {{ seleccion.pedido.nombre_cliente }}
@@ -38,7 +40,9 @@
         <ul>
           <li v-for="v in vendedores" :key="v">{{ v }}</li>
         </ul>
-        <p v-if="!vendedores.length" class="vacio">No hay vendedores registrados.</p>
+        <p v-if="!vendedores.length" class="vacio">
+          No hay vendedores registrados.
+        </p>
       </div>
     </div>
 
@@ -63,10 +67,18 @@
               <span v-else>🕒 Pendiente</span>
             </td>
             <td class="acciones-td">
-              <button v-if="!a.confirmado" class="boton secundario" @click="reasignar(i)">
+              <button
+                v-if="!a.confirmado"
+                class="boton secundario"
+                @click="reasignar(i)"
+              >
                 Reasignar
               </button>
-              <button v-if="!a.confirmado" class="boton confirmar" @click="confirmar(i)">
+              <button
+                v-if="!a.confirmado"
+                class="boton confirmar"
+                @click="confirmar(i)"
+              >
                 Confirmar
               </button>
             </td>
@@ -81,98 +93,107 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import Swal from "sweetalert2";
+import { ref, onMounted } from 'vue'
+import Swal from 'sweetalert2'
 
-const API = "http://localhost:3000/api";
+const API = 'http://localhost:3000/api'
 
-const pedidos = ref([]);
-const vendedores = ref([]);
-const asignaciones = ref([]);
-const seleccion = ref({ pedido: null, trabajador: null });
-const animando = ref(false);
+const pedidos      = ref([])
+const vendedores   = ref([])
+const asignaciones = ref([])
+const seleccion    = ref({ pedido: null, trabajador: null })
+const animando     = ref(false)
 
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  })
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
+    const text = await res.text()
+    throw new Error(text || res.statusText)
   }
-  return res.json();
+  return res.json()
 }
 
 async function cargarPedidos() {
-  const all = await fetchJson(`${API}/pedidos`);
+  const all = await fetchJson(`${API}/pedidos`)
   pedidos.value = all
-    .filter((p) => p.estado_id === 1)
-    .map((p) => ({ id: p.id, nombre_cliente: p.nombre_cliente }));
+    .filter(p => p.estado_id === 1)
+    .map(p => ({ id: p.id, nombre_cliente: p.nombre_cliente }))
 }
 
 async function cargarVendedores() {
-  vendedores.value = await fetchJson(`${API}/vendedores`);
+  vendedores.value = await fetchJson(`${API}/vendedores`)
 }
 
 async function cargarAsignaciones() {
-  const data = await fetchJson(`${API}/asignaciones`);
-  asignaciones.value = data.map((a) => ({
-    pedido: { id: a.pedido_id, nombre_cliente: a.nombre_cliente },
-    trabajador: a.trabajador,
-    confirmado: a.confirmado,
-  }));
+  const data = await fetchJson(`${API}/asignaciones`)
+  asignaciones.value = data.map(a => ({
+    pedido:       { id: a.pedido_id, nombre_cliente: a.nombre_cliente },
+    trabajador:   a.trabajador,
+    confirmado:   a.confirmado
+  }))
 }
 
 onMounted(async () => {
   try {
-    await Promise.all([cargarPedidos(), cargarVendedores(), cargarAsignaciones()]);
+    await Promise.all([
+      cargarPedidos(),
+      cargarVendedores(),
+      cargarAsignaciones()
+    ])
   } catch (err) {
-    console.error(err);
-    Swal.fire("Error", "No se pudo cargar los datos", "error");
+    console.error(err)
+    Swal.fire('Error', 'No se pudo cargar los datos', 'error')
   }
-});
+})
 
 async function girarRuleta() {
-  animando.value = true;
+  animando.value = true
   setTimeout(async () => {
-    const pedido = pedidos.value[Math.floor(Math.random() * pedidos.value.length)];
-    const trabajador =
-      vendedores.value[Math.floor(Math.random() * vendedores.value.length)];
+    const pedido    = pedidos.value[Math.floor(Math.random() * pedidos.value.length)]
+    const trabajador = vendedores.value[Math.floor(Math.random() * vendedores.value.length)]
 
-    await fetchJson(`${API}/pedidos/asignar/${pedido.id}`, {
-      method: "POST",
-      body: JSON.stringify({ trabajador }),
-    });
+    await fetchJson(
+      `${API}/pedidos/asignar/${pedido.id}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ trabajador })
+      }
+    )
 
-    seleccion.value = { pedido, trabajador };
-    await Promise.all([cargarPedidos(), cargarAsignaciones()]);
-    animando.value = false;
-  }, 1400);
+    seleccion.value = { pedido, trabajador }
+    await Promise.all([cargarPedidos(), cargarAsignaciones()])
+    animando.value = false
+  }, 1400)
 }
 
 async function confirmar(index) {
-  const { pedido, trabajador } = asignaciones.value[index];
+  const { pedido, trabajador } = asignaciones.value[index]
   const { isConfirmed } = await Swal.fire({
-    title: "¿Confirmar asignación?",
+    title: '¿Confirmar asignación?',
     text: `Pedido #${pedido.id} → ${trabajador}`,
-    icon: "question",
+    icon: 'question',
     showCancelButton: true,
-    confirmButtonText: "Sí",
-    cancelButtonText: "Cancelar",
-  });
-  if (!isConfirmed) return;
+    confirmButtonText: 'Sí',
+    cancelButtonText: 'Cancelar'
+  })
+  if (!isConfirmed) return
 
-  await fetchJson(`${API}/pedidos/confirmar/${pedido.id}`, { method: "POST" });
-  await Promise.all([cargarPedidos(), cargarAsignaciones()]);
-  Swal.fire("¡Confirmado!", "Asignación registrada.", "success");
+  await fetchJson(`${API}/pedidos/confirmar/${pedido.id}`, { method: 'POST' })
+  await Promise.all([cargarPedidos(), cargarAsignaciones()])
+  Swal.fire('¡Confirmado!', 'Asignación registrada.', 'success')
 }
 
 function reasignar(index) {
-  const nuevo = vendedores.value[Math.floor(Math.random() * vendedores.value.length)];
-  asignaciones.value[index].trabajador = nuevo;
+  const nuevo = vendedores.value[
+    Math.floor(Math.random() * vendedores.value.length)
+  ]
+  asignaciones.value[index].trabajador = nuevo
 }
 </script>
+
 
 <style scoped>
 .asignador-container {

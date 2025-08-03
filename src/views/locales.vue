@@ -2,10 +2,18 @@
   <div class="app-container">
     <header>
       <h1>Locales</h1>
+
       <div class="search-bar">
-        <input v-model="search" placeholder="Buscar..." />
-        <button @click="searchLocales">Buscar</button>
-        <router-link to="/registrar_local">
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Buscar..."
+          aria-label="Buscar"
+          @input="buscar"
+        />
+        <button @click.prevent="buscar">Buscar</button>
+
+        <router-link v-if="rolValido" to="/registrar_local">
           <button>Registrar Nuevo</button>
         </router-link>
       </div>
@@ -32,23 +40,21 @@ export default {
     return {
       search: "",
       locales: [],
+      filteredLocales: [],
     };
   },
   computed: {
-    filteredLocales() {
-      return this.locales.filter((local) =>
-        local.title.toLowerCase().includes(this.search.toLowerCase())
-      );
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return ["admin", "vendedor"].includes(rol);
     },
   },
   methods: {
-    searchLocales() {
-      // Si en el futuro quieres buscar en el backend, haz la petición aquí
-    },
     fetchLocales() {
       fetch("/api/locales")
         .then((res) => res.json())
         .then((data) => {
+          console.log("Locales recibidos:", data);
           this.locales = data.map((item) => ({
             id: item.id,
             title: item.nombre_local,
@@ -61,8 +67,19 @@ export default {
             fotoLocal: item.foto_local,
             imagenUbicacion: item.imagen_ubicacion,
           }));
+          this.filteredLocales = this.locales;
         })
         .catch((err) => console.error("Error al cargar locales:", err));
+    },
+    buscar() {
+      const texto = this.search.toLowerCase().trim();
+      if (texto === "") {
+        this.filteredLocales = this.locales;
+      } else {
+        this.filteredLocales = this.locales.filter((local) =>
+          local.title.toLowerCase().includes(texto)
+        );
+      }
     },
   },
   mounted() {
@@ -110,7 +127,7 @@ h1 {
 
 .search-bar button {
   padding: 6px 15px;
-  background-color: #00aaff;
+  background-color: #81c81e;
   color: #fff;
   border-radius: 10px;
   border: none;

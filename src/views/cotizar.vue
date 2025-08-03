@@ -29,25 +29,52 @@
     </div>
   </div>
 
-  <button class="button-cotizar">Cotizar</button>
+  <!-- Aquí va la lista de sabores y precios -->
+  <div v-if="saboresSeleccionados.length" class="detalle-sabores">
+    <ul>
+      <li v-for="s in saboresSeleccionados" :key="s.id">
+        {{ s.label }}: ${{ s.precio }}
+      </li>
+    </ul>
+  </div>
+
+  <button
+    class="button-cotizar"
+    @click="handleCotizar"
+    :disabled="!saboresSeleccionados.length"
+  >
+    Cotizar
+  </button>
+
   <h2 class="centrado">Total: ${{ total }}</h2>
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from "vue";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
-import { ref, computed, onMounted } from "vue";
+import Swal from "sweetalert2";
 
 const personas = ref(1);
 const orden = ref(1);
 const saboresSeleccionados = ref([]);
 const opciones = ref([]);
 
-// Traer sabores y precios desde la API
 onMounted(async () => {
   try {
     const res = await fetch("/api/sabores");
-    opciones.value = await res.json();
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const data = await res.json();
+    console.log("sabores raw →", data);
+
+    opciones.value = data.map((item) => ({
+      id: item.id,
+      label: item.label || item.sabor,
+      // Si tu API devuelve precio en otra propiedad, agrégala aquí
+      precio: item.precio ?? item.price ?? 0,
+      imagen: item.imagen || "",
+    }));
+    console.log("opciones mapeadas →", opciones.value);
   } catch (e) {
     console.error("No se pudieron cargar los sabores:", e);
   }
@@ -67,15 +94,41 @@ const decrementOrden = () => {
 };
 
 const total = computed(() => {
-  const subtotalPorOrden = saboresSeleccionados.value.reduce(
-    (sum, sabor) => sum + sabor.precio,
+  const subtotal = saboresSeleccionados.value.reduce(
+    (sum, { precio }) => sum + precio,
     0
   );
-  return personas.value * orden.value * subtotalPorOrden;
+  return personas.value * orden.value * subtotal;
 });
+
+function handleCotizar() {
+  Swal.fire({
+    icon: "success",
+    title: "Cotización",
+    html: `
+      Personas: <b>${personas.value}</b><br>
+      Órdenes: <b>${orden.value}</b><br>
+      Sabores: <b>${saboresSeleccionados.value.map((s) => s.label).join(", ")}</b><br>
+      Total: <b>$${total.value}</b>
+    `,
+  });
+}
 </script>
 
 <style>
+.detalle-sabores {
+  font-family: "Roboto", sans-serif;
+  text-align: center;
+  margin: 15px auto;
+}
+.detalle-sabores ul {
+  list-style: none;
+  padding: 0;
+}
+.detalle-sabores li {
+  margin: 4px 0;
+}
+
 .centrado {
   text-align: center;
   margin: 20px auto;

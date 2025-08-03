@@ -1,11 +1,24 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+
 const headerHeight = ref(0)
+const currentUser = ref(null)
 
 onMounted(async () => {
+  // calculamos el alto del header
   await nextTick()
   const el = document.querySelector('.container')
   if (el) headerHeight.value = el.offsetHeight
+
+  // chequeamos si hay user en localStorage
+  try {
+    const raw = localStorage.getItem('currentUser')
+    if (raw) {
+      currentUser.value = JSON.parse(raw)
+    }
+  } catch (e) {
+    console.warn('No se pudo parsear el usuario:', e)
+  }
 })
 </script>
 
@@ -16,17 +29,35 @@ onMounted(async () => {
       <router-link to="/sabores">Sabores</router-link>
       <router-link to="/cotizar">Cotizar</router-link>
       <router-link to="/locales">Locales</router-link>
-      <router-link to="/inicio_sesion">Inicio de sesión</router-link>
+
+      <!-- Aquí intercambiamos Inicio Sesión por Perfil -->
+      <router-link
+        v-if="!currentUser"
+        to="/inicio_sesion"
+      >
+        Iniciar sesión
+      </router-link>
+      <router-link
+        v-else
+        :to="{ name: 'Perfil', params: { id: currentUser.id } }"
+      >
+        Perfil
+      </router-link>
+
       <router-link to="/carrito">
         <img src="./assets/img/carrito.png" alt="carrito" class="carrito" />
       </router-link>
     </nav>
   </div>
 
-  <main class="content" :style="{ marginTop: headerHeight + 'px' }">
+  <main
+    class="content"
+    :style="{ marginTop: headerHeight + 'px' }"
+  >
     <router-view />
   </main>
 </template>
+
 
 <style>
 * {

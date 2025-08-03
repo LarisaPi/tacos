@@ -1,49 +1,50 @@
 <template>
-<div v-if="hasOrder" class="pago-wrapper">
-    <!-- Comprobante de pedido -->
-    <div class="pago-contenedor">
-    <h1>Comprobante de pedido</h1>
-    <p><strong>Cliente:</strong> {{ detalle.nombre_cliente }}</p>
-    <p><strong>Teléfono:</strong> {{ detalle.telefono }}</p>
-    <p><strong>Fecha:</strong> {{ detalle.fecha }}</p>
+  <div class="pago-wrapper">
+    <!-- Loader mientras se carga -->
+    <div v-if="loading" class="loader">
+      Cargando…
+    </div>
 
-    <ul class="resumen">
-        <li v-for="(item, i) in sabores" :key="i">
-        <img
-            :src="item.imagen"
-            :alt="item.nombre"
-            class="icono-sabor"
-        />
-        <span class="texto-sabor">
-            {{ item.nombre }} x{{ item.cantidad }}
-        </span>
-        <span class="subtotal">
-            {{ formatCurrency(item.precio * item.cantidad) }}
-        </span>
+    <!-- Mensaje de error si no hay pedido -->
+    <div v-else-if="!hasOrder" class="no-order">
+      No se encontró ningún pedido.
+    </div>
+
+    <!-- Detalles del pedido -->
+    <div v-if="hasOrder" class="pago-contenedor">
+      <h1>Comprobante de pedido</h1>
+      <p><strong>Cliente:</strong> {{ detalle.nombre_cliente }}</p>
+      <p><strong>Teléfono:</strong> {{ detalle.telefono }}</p>
+      <p><strong>Fecha:</strong> {{ detalle.fecha }}</p>
+
+      <ul class="resumen">
+        <li v-for="(item, index) in sabores" :key="index">
+          <img :src="item.imagen" :alt="item.nombre" class="icono-sabor" />
+          <span class="texto-sabor">{{ item.nombre }} x{{ item.cantidad }}</span>
+          <span class="subtotal">{{ formatCurrency(item.precio * item.cantidad) }}</span>
         </li>
-    </ul>
+      </ul>
 
-    <div class="total">
+      <div class="total">
         Total a pagar: <strong>{{ formatCurrency(detalle.total) }}</strong>
       </div>
     </div>
 
-    <!-- Instrucciones de pago con edición -->
+    <!-- Siempre muestra la sección de cuenta bancaria -->
     <div class="pago-contenedor pago-banco">
       <h2>Pagar a la cuenta</h2>
 
-      <!-- Modo visual -->
       <div v-if="!isEditing">
         <p><strong>Titular:</strong> {{ bankAccount.titular }}</p>
         <p><strong>Banco:</strong> {{ bankAccount.banco }}</p>
         <p><strong>Cuenta:</strong> {{ bankAccount.numero }}</p>
         <p><strong>CLABE:</strong> {{ bankAccount.clabe }}</p>
-        <button class="btn-editar" @click="startEdit">
+
+        <button v-if="isAdmin" class="btn-editar" @click="startEdit">
           ✏️ Editar datos
         </button>
       </div>
 
-      <!-- Modo edición -->
       <form v-else @submit.prevent="saveEdit" class="form-banco">
         <label>
           Titular
@@ -63,17 +64,13 @@
         </label>
         <div class="actions">
           <button type="submit" class="btn-guardar">💾 Guardar</button>
-          <button type="button" class="btn-cancelar" @click="cancelEdit">
-            ❌ Cancelar
-          </button>
+          <button type="button" class="btn-cancelar" @click="cancelEdit">❌ Cancelar</button>
         </div>
       </form>
 
-      <button class="btn-pagar" @click="sendComprobante">
+      <button v-if="hasOrder" class="btn-pagar" @click="sendComprobante">
         Confirmar pago
       </button>
-
-      <!-- Leyenda de captura -->
       <p class="leyenda-captura">
         Recuerda tomar una captura de pantalla de tu comprobante de pago y enviarlo al número que proporcionaste.
       </p>
@@ -82,79 +79,99 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
-import { useRouter }      from 'vue-router'
-import { useOrderStore }  from '../stores/orderStore'
-import Swal                from 'sweetalert2'
+import { ref, reactive, computed, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
+import { useOrderStore } from '../stores/orderStore'
+import Swal from 'sweetalert2'
 
-const router     = useRouter()
+const router = useRouter()
 const orderStore = useOrderStore()
-const order      = orderStore.order
 
-const hasOrder = computed(() => !!order && order.id)
-const sabores  = ref([])
-const detalle  = ref({ nombre_cliente: '', telefono: '', fecha: '', total: 0 })
+// Estado de carga
+const loading = ref(true)
 
-// Cuenta bancaria (editable)
-const bankAccount = reactive({
-  titular: 'Taquería El Buen Taco',
-  banco:   'Banco Ficticio',
-  numero:  '1234 5678 9012 3456',
-  clabe:   '001234567890123456'
+// Datos del pedido
+const sabores = ref([])
+const detalle = ref({
+  nombre_cliente: '',
+  telefono: '',
+  fecha: '',
+  total: 0
 })
 
+// Cuenta bancaria
+const bankAccount = reactive({
+  titular: 'Taquería El Buen Taco',
+  banco: 'Banco Ficticio',
+  numero: '1234 5678 9012 3456',
+  clabe: '001234567890123456'
+})
 const bankAccountDraft = reactive({ ...bankAccount })
-const isEditing        = ref(false)
+const isEditing = ref(false)
 
-const formatCurrency = (value) =>
+// Usuario
+const rawUser = localStorage.getItem('currentUser')
+const user = ref(rawUser ? JSON.parse(rawUser) : null)
+const isAdmin = computed(() => user.value?.role === 'admin')
+
+// Formateo de moneda
+const formatCurrency = value =>
   new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
     minimumFractionDigits: 2
   }).format(value)
 
-onMounted(async () => {
-  if (!hasOrder.value) {
-    return router.replace({ path: '/' })
+// Comprueba existencia de orden
+const hasOrder = computed(() => !!orderStore.order?.id)
+
+// Observador: carga datos del pedido
+watchEffect(async () => {
+  if (!orderStore.order?.id) {
+    loading.value = false
+    return
   }
+
   try {
+    const id = orderStore.order.id
     const [resSab, resCab] = await Promise.all([
-      fetch(`http://localhost:3000/api/pedidos/${order.id}/sabores`),
-      fetch(`http://localhost:3000/api/pedidos/${order.id}`)
+      fetch(`http://localhost:3000/api/pedidos/${id}/sabores`),
+      fetch(`http://localhost:3000/api/pedidos/${id}`)
     ])
-    if (!resSab.ok || !resCab.ok) {
-      throw new Error('Error en las respuestas del servidor')
-    }
+    if (!resSab.ok || !resCab.ok) throw new Error('Error en fetch')
+
     sabores.value = await resSab.json()
     detalle.value = await resCab.json()
   } catch (err) {
     console.error(err)
     await Swal.fire('Error', 'No se pudo cargar el comprobante', 'error')
+    router.replace({ path: '/' })
+  } finally {
+    loading.value = false
   }
 })
 
+// Edición de cuenta bancaria
 function startEdit() {
   Object.assign(bankAccountDraft, bankAccount)
   isEditing.value = true
 }
-
 function saveEdit() {
   Object.assign(bankAccount, bankAccountDraft)
   isEditing.value = false
   Swal.fire('Listo', 'Datos de cuenta actualizados', 'success')
 }
-
 function cancelEdit() {
   isEditing.value = false
 }
 
+// Confirmar pago
 async function sendComprobante() {
   await Swal.fire(
     '¡Listo!',
     `El comprobante se ha enviado al ${detalle.value.telefono}`,
     'success'
   )
-  // Regresar al carrito
   router.replace({ path: '/' })
 }
 </script>

@@ -1,8 +1,9 @@
+// stores/orderStore.js
 import { defineStore } from 'pinia'
 
 export const useOrderStore = defineStore('order', {
   state: () => ({
-    order: null   // { id, name, total }
+    order: null // { id, name, total }
   }),
   actions: {
     setOrder(o) {
@@ -11,5 +12,6 @@ export const useOrderStore = defineStore('order', {
     clearOrder() {
       this.order = null
     }
-  }
+  },
+  persist: true // 👈 esta línea habilita persistencia
 })

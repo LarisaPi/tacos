@@ -6,8 +6,9 @@
         <input
           v-model="search"
           type="text"
-          placeholder="Buscar por nombre o correo"
+          placeholder="Buscar..."
           aria-label="Buscar"
+          @input="buscar"
         />
         <button @click.prevent="buscar">Buscar</button>
       </div>
@@ -40,7 +41,7 @@
         </div>
 
         <div class="boton-container">
-         <button @click="editar(usuario.id)">Editar</button>
+          <button @click="editar(usuario.id)">Editar</button>
         </div>
       </div>
     </section>
@@ -48,7 +49,7 @@
 </template>
 
 <script>
-import Edit_usuario from './edit_usuario.vue';
+import Edit_usuario from "./edit_usuario.vue";
 
 export default {
   data() {
@@ -80,17 +81,21 @@ export default {
       }
     },
     buscar() {
-      const texto = this.search.toLowerCase();
-      this.usuariosFiltrados = this.usuarios.filter(
-        (u) =>
-          u.nombre.toLowerCase().includes(texto) ||
-          u.email.toLowerCase().includes(texto)
-      );
+      const texto = this.search.toLowerCase().trim();
+      if (texto === "") {
+        this.usuariosFiltrados = this.usuarios;
+      } else {
+        this.usuariosFiltrados = this.usuarios.filter(
+          (u) =>
+            (u.nombre && u.nombre.toLowerCase().includes(texto)) ||
+            (u.email && u.email.toLowerCase().includes(texto))
+        );
+      }
     },
     editar(id) {
-      this.$router.push({ name: 'EditUsuario', params: { id } });
-    }
-
+      // El name debe coincidir con el definido en router/index.js
+      this.$router.push({ name: "EditarUsuario", params: { id } });
+    },
   },
   mounted() {
     this.cargarUsuarios();
@@ -102,7 +107,7 @@ export default {
 /* Copia tu CSS aquí igual que antes */
 .usuarios {
   padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: "Segoe UI", sans-serif;
   background: #f5f5f5;
   min-height: 100vh;
   box-sizing: border-box;
@@ -213,7 +218,6 @@ export default {
   white-space: normal;
   padding-left: 10px;
 }
-
 
 .boton-container {
   display: flex;

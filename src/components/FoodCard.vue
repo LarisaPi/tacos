@@ -1,5 +1,6 @@
 <template>
-  <div class="food-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
+  <div class="food-card"
+       :class="{ orange: isHighlighted, yellow: !isHighlighted }">
     <img :src="food.image || placeholderImage" alt="Comida" />
     <h3><em>{{ food.title }}</em></h3>
 
@@ -11,18 +12,22 @@
       <strong>Cantidad:</strong>
       <div class="qty-control">
         <button @click="decreaseQty">−</button>
+
         <input
           type="number"
           v-model.number="editableQty"
           @change="validateQty"
           min="50"
         />
+
         <button @click="increaseQty">+</button>
       </div>
     </div>
 
     <div class="buttons-center">
-      <button class="delete-button" @click="$emit('remove', index)">Eliminar</button>
+      <button class="delete-button" @click="$emit('remove', index)">
+        Eliminar
+      </button>
     </div>
   </div>
 </template>
@@ -31,38 +36,57 @@
 export default {
   name: 'FoodCard',
   props: {
-    food: Object,
-    index: Number,
-    isHighlighted: Boolean
+    food: {
+      type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
+      required: true
+    },
+    isHighlighted: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
       placeholderImage: 'https://via.placeholder.com/400x150.png?text=Comida',
-      editableQty: this.food.qty
+      editableQty: 50   // siempre arranca en 50
     }
   },
+  mounted() {
+    this.syncQtyFromProp()
+  },
   watch: {
-    'food.qty'(val) {
-      this.editableQty = val
+    // Observamos todo el objeto food
+    food: {
+      handler() {
+        this.syncQtyFromProp()
+      },
+      immediate: true,
+      deep: true
     }
   },
   methods: {
+    syncQtyFromProp() {
+      // if no qty or <50, forzamos 50
+      const parsed = parseInt(this.food.qty, 10)
+      this.editableQty = (!isNaN(parsed) && parsed >= 50) ? parsed : 50
+      // opcional: emitir de nuevo para corregir store al cargar
+      this.$emit('update-qty', this.index, this.editableQty)
+    },
     increaseQty() {
-      const newQty = this.editableQty + 1
-      this.editableQty = newQty
-      this.$emit('update-qty', this.index, newQty)
+      this.editableQty++
+      this.$emit('update-qty', this.index, this.editableQty)
     },
     decreaseQty() {
-      const newQty = Math.max(50, this.editableQty - 1) // <- evita que baje de 50
-      this.editableQty = newQty
-      this.$emit('update-qty', this.index, newQty)
+      this.editableQty = Math.max(50, this.editableQty - 1)
+      this.$emit('update-qty', this.index, this.editableQty)
     },
     validateQty() {
-      let parsed = parseInt(this.editableQty)
-
-      if (isNaN(parsed) || parsed < 50) {
-        parsed = 50
-      }
+      let parsed = parseInt(this.editableQty, 10)
+      if (isNaN(parsed) || parsed < 50) parsed = 50
 
       this.editableQty = parsed
       this.$emit('update-qty', this.index, parsed)

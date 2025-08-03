@@ -30,6 +30,26 @@
         </div>
       </div>
 
+      <div class="opcion" @click="reg_taco" v-if="usuario.tipo_usuario !== 'cliente'">
+        <i class="icon">➕🌮</i>
+        <div>
+          <p class="titulo">Registrar sabores</p>
+          <p class="descripcion">Añadir nuevos sabores a la base.</p>
+        </div>
+      </div>
+
+      <div
+        class="opcion"
+        @click="registrarLocal"
+        v-if="usuario.tipo_usuario !== 'cliente'"
+      >
+        <i class="icon">🏪📝</i>
+        <div>
+          <p class="titulo">Registrar local</p>
+          <p class="descripcion">Añadir información del establecimiento.</p>
+        </div>
+      </div>
+
       <div class="opcion" @click="inicio" v-if="usuario.tipo_usuario !== 'cliente'">
         <i class="icon">✏️📃</i>
         <div>
@@ -64,13 +84,6 @@
       </div>
 
       <!-- Registrar sabores - admin y vendedor -->
-      <div class="opcion" @click="reg_taco" v-if="usuario.tipo_usuario !== 'cliente'">
-        <i class="icon">➕🌮</i>
-        <div>
-          <p class="titulo">Registrar sabores</p>
-          <p class="descripcion">Añadir nuevos sabores a la base.</p>
-        </div>
-      </div>
 
       <!-- Estado de pedido - cliente  -->
       <div class="opcion" @click="estado">
@@ -81,15 +94,11 @@
         </div>
       </div>
       <!-- Estado de pedido - cliente y admin y vendedor -->
-      <div
-        class="opcion"
-        @click="tabla_pedidos"
-        v-if="usuario.tipo_usuario !== 'cliente'"
-      >
+      <div class="opcion" @click="tabla_pedidos">
         <i class="icon">📦⏳</i>
         <div>
-          <p class="titulo">Pedidos Pendientes</p>
-          <p class="descripcion">Ver los pedidos pendientes .</p>
+          <p class="titulo">Tabla de pedidos</p>
+          <p class="descripcion">Ver los pedidos.</p>
         </div>
       </div>
 
@@ -115,18 +124,19 @@
         </div>
       </div>
 
-      <!-- Registrar local - admin y vendedor -->
       <div
         class="opcion"
-        @click="registrarLocal"
-        v-if="usuario.tipo_usuario !== 'cliente'"
+        @click="pago"
+        v-if="usuario.tipo_usuario === 'admin'"
       >
-        <i class="icon">🏪📝</i>
+        <i class="icon">🏦🏧</i>
         <div>
-          <p class="titulo">Registrar local</p>
-          <p class="descripcion">Añadir información del establecimiento.</p>
+          <p class="titulo">Cuenta</p>
+          <p class="descripcion">Cambiar cuenta de banco.</p>
         </div>
       </div>
+
+      <!-- Registrar local - admin y vendedor -->
     </div>
 
     <!-- Botón de cerrar sesión -->
@@ -173,11 +183,15 @@ export default {
   },
   methods: {
     registrarUsuario() {
-      this.$router.push("/reg_usuario");
+     this.$router.push({
+  name: "RegUsuario",
+  params: { rol: this.usuario.tipo_usuario }
+});
+
     },
     edit_usuario() {
       // Navegar con nombre de ruta y param id
-      this.$router.push({ name: "EditUsuario", params: { id: this.id } });
+      this.$router.push({ name: "EditarUsuario", params: { id: this.id } });
     },
     reg_taco() {
       this.$router.push("/registrar_taco");
@@ -197,12 +211,26 @@ export default {
     pedidosAleatorios() {
       this.$router.push("/pedidos");
     },
+    pago() {
+      this.$router.push("/pago");
+    },
     registrarLocal() {
       this.$router.push("/registrar_local");
     },
     tabla_pedidos() {
-      this.$router.push("/tabla_pedidos");
+      const isVendedor = this.usuario.tipo_usuario === "vendedor";
+      this.$router.push({
+        name: isVendedor ? "TablaPedidos-ConNombre" : "TablaPedidos-Simple",
+        params: Object.assign(
+          {
+            rol: this.usuario.tipo_usuario,
+            id: this.id,
+          },
+          isVendedor ? { nombre: this.usuario.nombre } : {}
+        ),
+      });
     },
+
     inicio() {
       this.$router.push({
         name: "Inicio",
@@ -222,8 +250,19 @@ export default {
       });
     },
 
+    pago() {
+    this.$router.push({ name: 'Pago' });
+  },
+
     cerrarSesion() {
-      this.$router.push("/inicio_sesion");
+      // 1. Limpias el usuario
+      localStorage.removeItem("currentUser");
+
+      // 2. Rediriges a InicioSesion y, al completarse, fuerzas la recarga
+      this.$router
+        .push({ name: "InicioSesion" })
+        .then(() => window.location.reload())
+        .catch(console.error);
     },
   },
 };

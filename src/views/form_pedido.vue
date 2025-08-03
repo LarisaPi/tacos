@@ -75,86 +75,101 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useCarritoStore } from "../stores/carrito";
-import { useOrderStore } from "../stores/orderStore";
-import Swal from "sweetalert2";
-import { useRouter } from "vue-router";
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useCarritoStore } from '../stores/carrito'
+import { useOrderStore } from '../stores/orderStore'
+import Swal from 'sweetalert2'
 
-const router = useRouter();
-const carrito = useCarritoStore();
-const orderStore = useOrderStore();
+const route      = useRoute()
+const router     = useRouter()
+const carrito    = useCarritoStore()
+const orderStore = useOrderStore()
 
-// Campos v-model
-const nombre = ref("");
-const telefono = ref("");
-const correo = ref("");
-const calle = ref("");
-const ciudad = ref("");
-const cp = ref("");
-const estado = ref("");
-const colonia = ref("");
-const calles = ref("");
-const fecha = ref("");
-const hora = ref("");
+// v-models
+const nombre   = ref('')
+const telefono = ref('')
+const correo   = ref('')
+const calle    = ref('')
+const ciudad   = ref('')
+const cp       = ref('')
+const estado   = ref('')
+const colonia  = ref('')
+const calles   = ref('')
+const fecha    = ref('')
+const hora     = ref('')
 
-const onConfirm = async () => {
+// obtenemos el id del cliente de la URL
+const userId = Number(route.params.id)
+
+async function onConfirm() {
   const { isConfirmed } = await Swal.fire({
-    title: "¿Confirmar pedido?",
-    text: "Se enviará tu pedido con los datos proporcionados.",
-    icon: "question",
+    title: '¿Confirmar pedido?',
+    text: 'Se enviará tu pedido con estos datos.',
+    icon: 'question',
     showCancelButton: true,
-    confirmButtonText: "Sí, enviar",
-  });
-  if (!isConfirmed) return;
+    confirmButtonText: 'Sí, enviar'
+  })
+  if (!isConfirmed) return
 
-  // Construir productos
-  const productos = carrito.items.map((i) => ({ id_taco: i.id, cantidad: i.qty }));
-
-  // Calcular total usando i.precio
-  const total = carrito.items.reduce((sum, i) => sum + (i.precio ?? 0) * i.qty, 0);
+  // armamos el pedido
+  const productos = carrito.items.map(i => ({ id_taco: i.id, cantidad: i.qty }))
+  const total     = carrito.items.reduce((sum, i) => sum + (i.precio || 0)*i.qty, 0)
 
   const payload = {
-    id_cliente: 3,
-    nombre: nombre.value,
-    telefono: telefono.value,
-    correo: correo.value,
+    id_cliente:    userId,
+    nombre:        nombre.value,
+    telefono:      telefono.value,
+    correo:        correo.value,
     direccion: {
-      calle: calle.value,
+      calle:   calle.value,
       colonia: colonia.value,
-      ciudad: ciudad.value,
-      cp: cp.value,
-      estado: estado.value,
-      calles: calles.value,
+      ciudad:  ciudad.value,
+      cp:      cp.value,
+      estado:  estado.value,
+      calles:  calles.value
     },
     fecha_entrega: fecha.value,
-    hora_entrega: hora.value,
+    hora_entrega:  hora.value,
     productos,
-    total,
-  };
+    total
+  }
 
   try {
-    const res = await fetch("http://localhost:3000/api/pedido", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const res = await fetch('/api/pedido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
 
-    await Swal.fire("¡Éxito!", "Tu pedido fue enviado.", "success");
+    await Swal.fire('¡Éxito!', 'Tu pedido fue enviado.', 'success')
 
-    // Guardar orden y navegar
-    orderStore.setOrder({ id: data.id_pedido, name: nombre.value, total });
-    carrito.vaciarCarrito();
-    router.push({ name: "Pago" });
+    // guardamos en Pinia y limpiamos carrito
+    orderStore.setOrder({ id: data.id_pedido, name: nombre.value, total })
+    carrito.vaciarCarrito()
+
+    // sólo push al nombre de ruta Pago
+    router.push({ name: 'Pago' })
   } catch (err) {
-    await Swal.fire("Error", err.message, "error");
+    await Swal.fire('Error', err.message, 'error')
   }
-};
+}
 </script>
 
+
+
 <style scoped>
+
+input[type="email"] {
+  padding: 18px 20px;
+  font-size: 16px;
+  border: 1.6px solid #aaa;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  width: 100%;
+}
 .contenedor {
   max-width: 950px;
   margin: 30px auto;

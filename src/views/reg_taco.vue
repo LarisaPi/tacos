@@ -87,8 +87,8 @@ export default {
         text: "Se guardará el nuevo sabor en el sistema.",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#FFF07F",
-        cancelButtonColor: "#d33",
+        confirmButtonColor: "#308a00",
+        cancelButtonColor: "#aaa",
         confirmButtonText: "¡Sí, registrar sabor!",
         cancelButtonText: "Cancelar",
       }).then((result) => {

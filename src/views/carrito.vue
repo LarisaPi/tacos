@@ -22,67 +22,68 @@
   </div>
 </template>
 
-<script>
-import FoodCard from "../components/FoodCard.vue";
-import { useCarritoStore } from "../stores/carrito";
-import { useRouter } from "vue-router";
-import Swal from "sweetalert2";
+<script setup>
+import FoodCard from '../components/FoodCard.vue'
+import { useCarritoStore } from '../stores/carrito'
+import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
-export default {
-  components: { FoodCard },
-  setup() {
-    const carrito = useCarritoStore();
-    const router = useRouter();
+const carrito = useCarritoStore()
+const router  = useRouter()
 
-    const realizarPedido = async () => {
-      if (carrito.items.length === 0) {
-        await Swal.fire({
-          icon: "warning",
-          title: "El carrito está vacío",
-          text: "Agrega al menos un producto antes de continuar.",
-        });
-        return;
-      }
+const realizarPedido = async () => {
+  if (carrito.items.length === 0) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'El carrito está vacío',
+      text: 'Agrega al menos un producto antes de continuar.'
+    })
+    return
+  }
 
-      const result = await Swal.fire({
-        title: "¿Continuar al formulario?",
-        text: "Se te redirigirá para completar los datos de tu pedido.",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Sí, continuar",
-        cancelButtonText: "Cancelar",
-      });
+  const { isConfirmed } = await Swal.fire({
+    title: '¿Continuar al formulario?',
+    text: 'Se te redirigirá para completar los datos de tu pedido.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, continuar'
+  })
+  if (!isConfirmed) return
 
-      if (result.isConfirmed) {
-        router.push({ path: "/form_pedido" });
-      }
-    };
+  // <-- LEEMOS AQUÍ -->
+  let currentUser = null
+  try {
+    currentUser = JSON.parse(localStorage.getItem('currentUser'))
+  } catch {
+    currentUser = null
+  }
+  const userId = currentUser?.id
 
-    const removeItem = (index) => {
-      carrito.eliminarItem(index);
-    };
+  if (!userId) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'No has iniciado sesión',
+      text: 'Debes iniciar sesión antes de realizar un pedido.'
+    })
+    return router.push({ name: 'InicioSesion', query: { redirect: '/form_pedido' } })
+  }
 
-    const updateQty = (index, qty) => {
-      if (qty >= 50) {
-        carrito.actualizarCantidad(index, qty);
-      } else {
-        Swal.fire({
-          icon: "info",
-          title: "Cantidad mínima",
-          text: "La cantidad mínima es 50 por sabor.",
-        });
-      }
-    };
+  // Rediriges al formulario con id de usuario
+  router.push({
+    name: 'FormPedido',
+    params: { id: userId }
+  })
+}
 
-    return {
-      carrito,
-      realizarPedido,
-      removeItem,
-      updateQty,
-    };
-  },
-};
+const removeItem = (index) => carrito.eliminarItem(index)
+const updateQty = (index, qty) => {
+  if (qty >= 50) carrito.actualizarCantidad(index, qty)
+  else Swal.fire({ icon: 'info', title: 'Cantidad mínima', text: 'La cantidad mínima es 50 por sabor.' })
+}
+
 </script>
+
+
 
 <style scoped>
 .app-container {

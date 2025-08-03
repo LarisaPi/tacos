@@ -30,20 +30,13 @@
     </div>
 
     <div class="grupo">
-      <div class="campo">
-        <label>Código Postal</label>
-        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
-      </div>
+      
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
         <input type="text" v-model="estado" placeholder="Ej. CDMX" />
       </div>
     </div>
 
-    <div class="campo">
-      <label>Entre calles</label>
-      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
-    </div>
 
     <div class="campo">
       <label>Colonia</label>
@@ -79,6 +72,7 @@
         </div>
       </div>
     </div>
+
     <div class="acciones">
       <button class="editar" @click="showConfirmDialog('editar')">Editar</button>
       <button class="eliminar" @click="showConfirmDialog('eliminar')">Eliminar</button>
@@ -93,21 +87,20 @@ import Swal from "sweetalert2";
 
 const route = useRoute();
 const router = useRouter();
-const id = route.params.id; // <-- obtener id por params
+const id = route.params.id;
 
 const nombre = ref("");
 const descripcion = ref("");
 const calle = ref("");
 const ciudad = ref("");
-const codigoPostal = ref("");
 const estado = ref("");
-const entreCalles = ref("");
 const colonia = ref("");
 const ubicacionFile = ref(null);
 const localFile = ref(null);
 const ubicacionPreviewUrl = ref(null);
 const localPreviewUrl = ref(null);
 
+// Carga los datos del local al montar
 onMounted(async () => {
   if (!id) {
     Swal.fire("Error", "No se encontró el ID del local.", "error");
@@ -124,9 +117,7 @@ onMounted(async () => {
     descripcion.value = data.descripcion;
     calle.value = data.calle;
     ciudad.value = data.ciudad;
-    codigoPostal.value = data.codigo_postal;
     estado.value = data.estado;
-    entreCalles.value = data.entre_calles;
     colonia.value = data.colonia;
     ubicacionPreviewUrl.value = data.imagen_ubicacion;
     localPreviewUrl.value = data.foto_local;
@@ -134,6 +125,12 @@ onMounted(async () => {
     Swal.fire("Error", "No se pudo cargar el local.", "error");
     router.push("/locales");
   }
+});
+
+// Limpia URLs de preview
+onBeforeUnmount(() => {
+  if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
+  if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
 });
 
 function onUbicacionChange(e) {
@@ -183,9 +180,7 @@ async function guardarCambios() {
     descripcion: descripcion.value,
     calle: calle.value,
     ciudad: ciudad.value,
-    codigo_postal: codigoPostal.value,
     estado: estado.value,
-    entre_calles: entreCalles.value,
     colonia: colonia.value,
     fotoLocal: fotoLocalB64 || localPreviewUrl.value,
     imagenUbicacion: ubicB64 || ubicacionPreviewUrl.value,
@@ -233,10 +228,14 @@ async function eliminarLocal() {
   }
 }
 
-onBeforeUnmount(() => {
-  if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
-  if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
-});
+// Nuevo método de confirmación
+function showConfirmDialog(tipo) {
+  if (tipo === "editar") {
+    guardarCambios();
+  } else if (tipo === "eliminar") {
+    eliminarLocal();
+  }
+}
 </script>
 
 <style scoped>

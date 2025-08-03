@@ -1,12 +1,19 @@
 <template>
-  <div>
+  <div class="estado-pedidos-container">
     <h1>Estado de tus pedidos</h1>
 
-    <div v-for="pedido in pedidos" :key="pedido.id" class="pedido-bloque">
-      <!-- Nombre del cliente -->
+    <div v-if="loading">Cargando pedidos…</div>
+    <div v-else-if="error">Ocurrió un error: {{ error.message }}</div>
+    <div v-else-if="!pedidos.length">No hay pedidos para mostrar.</div>
+
+    <div
+      v-else
+      v-for="pedido in pedidos"
+      :key="pedido.id"
+      class="pedido-bloque"
+    >
       <h2>Cliente: {{ pedido.nombre_cliente }}</h2>
 
-      <!-- barra de progreso -->
       <div class="progress-container">
         <div class="progress-steps">
           <div
@@ -15,10 +22,11 @@
             class="step"
             :class="{
               active:
-                i <=
-                (pedido.estado_id === 5
-                  ? pedido.estado_id_original - 1
-                  : pedido.estado_id - 1),
+                i <= (
+                  pedido.estado_id === 5
+                    ? pedido.estado_id_original - 1
+                    : pedido.estado_id - 1
+                )
             }"
           >
             {{ step }}
@@ -33,39 +41,38 @@
                   : pedido.estado_id - 1) /
                   (steps.length - 1)) *
                   100 +
-                '%',
+                '%'
             }"
           ></div>
         </div>
       </div>
 
-      <!-- estado visual -->
       <p><strong>Estado:</strong> {{ mostrarEstado(pedido) }}</p>
 
-      <!-- botones de acción -->
       <div class="buttons-row">
         <button
           class="cancel-btn"
           @click="cancelarPedido(pedido)"
-          :disabled="pedido.estado_id >= 4"
+          :disabled="!canCancel(pedido)"
         >
           Cancelar pedido
         </button>
         <button
+          class="advance-btn"
           @click="confirmarEstado(pedido)"
-          :disabled="pedido.estado_id >= steps.length"
+          :disabled="!canAdvance(pedido)"
         >
-          Siguiente estado
+          <!-- Cambia el texto para el primer paso en vendedor -->
+          {{ currentUser.role === 'vendedor' && pedido.estado_id === 1
+            ? 'Confirmar pedido'
+            : 'Siguiente estado' }}
         </button>
       </div>
 
-      <!-- detalles del pedido -->
       <h3>Información del pedido</h3>
       <p>
         <strong>Cantidad total:</strong>
-        {{
-          pedido.sabores?.reduce((acc, sabor) => acc + (sabor.cantidad || 0), 0) ?? "N/A"
-        }}
+        {{ pedido.sabores.reduce((acc, s) => acc + (s.cantidad || 0), 0) }}
       </p>
       <p>
         <strong>Dirección:</strong>
@@ -75,11 +82,10 @@
       <p><strong>Teléfono:</strong> {{ pedido.telefono }}</p>
       <p>
         <strong>Fecha:</strong>
-        {{ new Date(pedido.fecha).toLocaleString("es-MX") }}
+        {{ new Date(pedido.fecha).toLocaleString('es-MX') }}
       </p>
       <p><strong>Total:</strong> ${{ (pedido.total ?? 0).toFixed(2) }}</p>
 
-      <!-- sabores -->
       <h3>Sabores</h3>
       <ul>
         <li v-for="(sabor, idx) in pedido.sabores" :key="idx">
@@ -91,122 +97,164 @@
 </template>
 
 <script>
-import Swal from "sweetalert2";
+import Swal from 'sweetalert2'
 
 export default {
+  name: 'EstadoPedidos',
   data() {
     return {
-      steps: ["Recibido", "En Preparación", "En camino", "Entregado"],
+      steps: ['Recibido', 'En Preparación', 'En camino', 'Entregado'],
       pedidos: [],
-    };
+      loading: false,
+      error: null,
+      currentUser: JSON.parse(
+        localStorage.getItem('currentUser') ||
+          JSON.stringify({ role: 'admin', id: 0 })
+      )
+    }
   },
   methods: {
+    canCancel(pedido) {
+      const { role } = this.currentUser
+      if (role === 'admin') return true
+      if (role === 'cliente') return pedido.estado_id < 4
+      return false
+    },
+    canAdvance(pedido) {
+      const { role } = this.currentUser
+      // cálculo de siguiente paso
+      const siguiente =
+        pedido.estado_id === 1 && role === 'vendedor'
+          ? 2
+          : pedido.estado_id + 1
+
+      if (pedido.estado_id === 5) return false
+      if (role === 'admin') return siguiente <= this.steps.length
+      if (role === 'vendedor') return siguiente <= 3
+      if (role === 'cliente') return siguiente === 4
+      return false
+    },
     async obtenerPedidos() {
+      this.loading = true
+      this.error = null
+
       try {
-        const userId = 3; // ajusta según tu cliente
-        const res = await fetch(`http://localhost:3000/api/pedidos/usuario/${userId}`);
-        if (!res.ok) throw new Error("Fetch error");
-        const pedidos = await res.json();
+        const { role, id } = this.currentUser
+        let url = '/api/pedidos'
 
-        // traer sabores de cada pedido
-        await Promise.all(
-          pedidos.map(async (pedido) => {
-            const rs = await fetch(
-              `http://localhost:3000/api/pedidos/${pedido.id}/sabores`
-            );
-            pedido.sabores = rs.ok ? await rs.json() : [];
+        if (role === 'vendedor') {
+          url = `/api/pedidos/vendedor/${id}`
+        } else if (role === 'cliente') {
+          url = `/api/pedidos/usuario/${id}`
+        }
+
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const lista = await res.json()
+
+        const withSabores = await Promise.all(
+          (lista || []).map(async p => {
+            // agregamos estado original por si cancela
+            const pedido = { ...p, estado_id_original: p.estado_id }
+            try {
+              const rs = await fetch(`/api/pedidos/${pedido.id}/sabores`)
+              pedido.sabores = rs.ok ? await rs.json() : []
+            } catch {
+              pedido.sabores = []
+            }
+            return pedido
           })
-        );
+        )
 
-        this.pedidos = pedidos;
+        this.pedidos = withSabores
       } catch (err) {
-        console.error("Error al obtener pedidos o sabores:", err);
+        this.error = err
+      } finally {
+        this.loading = false
       }
     },
     async confirmarEstado(pedido) {
-      const siguiente = pedido.estado_id + 1;
-      if (siguiente > this.steps.length) return;
+      if (!this.canAdvance(pedido)) return
+
+      // definimos correctamente el siguiente paso
+      const siguiente =
+        pedido.estado_id === 1 && this.currentUser.role === 'vendedor'
+          ? 2
+          : pedido.estado_id + 1
 
       const { isConfirmed } = await Swal.fire({
-        title: "¿Avanzar al siguiente estado?",
-        text: `"${this.steps[siguiente - 1]}"`,
-        icon: "question",
+        title: `Pasar a "${this.steps[siguiente - 1]}"?`,
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonText: "Sí, avanzar",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "green",
-        cancelButtonColor: "red",
-      });
-      if (!isConfirmed) return;
+        confirmButtonText: 'Sí',
+        cancelButtonText: 'No'
+      })
+      if (!isConfirmed) return
 
       try {
-        const res = await fetch(`http://localhost:3000/api/pedidos/${pedido.id}/estado`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado_id: siguiente }),
-        });
-        if (!res.ok) throw new Error();
-        pedido.estado_id = siguiente;
-        Swal.fire("¡Estado actualizado!", "", "success");
-      } catch (err) {
-        console.error("Error actualizando estado:", err);
-        Swal.fire("Error", "No pudimos actualizar.", "error");
+        const res = await fetch(`/api/pedidos/${pedido.id}/estado`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado_id: siguiente })
+        })
+        if (!res.ok) throw new Error()
+        pedido.estado_id = siguiente
+        Swal.fire('¡Hecho!', '', 'success')
+      } catch {
+        Swal.fire('Error', 'No se pudo actualizar.', 'error')
       }
     },
     async cancelarPedido(pedido) {
-      const { isConfirmed } = await Swal.fire({
-        title: "¿Cancelar este pedido?",
-        text: "Esta acción no se puede deshacer.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, cancelar",
-        cancelButtonText: "No",
-        confirmButtonColor: "red",
-      });
+      if (!this.canCancel(pedido)) return
 
-      if (!isConfirmed) return;
+      const { isConfirmed } = await Swal.fire({
+        title: '¿Cancelar pedido?',
+        text: 'No podrás revertir esto.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No'
+      })
+      if (!isConfirmed) return
 
       try {
-        // Guardamos el estado actual antes de cancelar
-        pedido.estado_id_original = pedido.estado_id;
-
-        const res = await fetch(`http://localhost:3000/api/pedidos/${pedido.id}/estado`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado_id: 5 }), // ← Estado cancelado
-        });
-
-        if (!res.ok) throw new Error();
-
-        pedido.estado_id = 5; // ← Reflejamos el cambio localmente
-        Swal.fire("Cancelado", "El pedido ha sido cancelado.", "success");
-      } catch (err) {
-        console.error("Error cancelando pedido:", err);
-        Swal.fire("Error", "No pudimos cancelar el pedido.", "error");
+        pedido.estado_id_original = pedido.estado_id
+        const res = await fetch(`/api/pedidos/${pedido.id}/estado`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado_id: 5 })
+        })
+        if (!res.ok) throw new Error()
+        pedido.estado_id = 5
+        Swal.fire('Cancelado', '', 'success')
+      } catch {
+        Swal.fire('Error', 'No se pudo cancelar.', 'error')
       }
     },
     mostrarEstado(pedido) {
-      const estados = [
-        "Recibido",
-        "En Preparación",
-        "En camino",
-        "Entregado",
-        "Cancelado",
-      ];
-      const original =
-        pedido.estado_id === 5 ? pedido.estado_id_original || 1 : pedido.estado_id;
-      const textoEstado = estados[original - 1];
+      const labels = [
+        'Recibido',
+        'En Preparación',
+        'En camino',
+        'Entregado',
+        'Cancelado'
+      ]
+      const actual =
+        pedido.estado_id === 5
+          ? pedido.estado_id_original
+          : pedido.estado_id
 
       return pedido.estado_id === 5
-        ? `Cancelado (estaba en ${textoEstado})`
-        : textoEstado;
-    },
+        ? `Cancelado (estaba en ${labels[actual - 1]})`
+        : labels[actual - 1]
+    }
   },
   mounted() {
-    this.obtenerPedidos();
-  },
-};
+    this.obtenerPedidos()
+  }
+}
 </script>
+
 
 <style scoped>
 .pedido-bloque {
@@ -225,7 +273,7 @@ export default {
 }
 
 .cancel-btn {
-  font-family: "roboto", sans-serif;
+  font-family: 'roboto', sans-serif;
   background-color: #d33;
   color: white;
   border: none;
@@ -235,7 +283,7 @@ export default {
 }
 
 button {
-  font-family: "roboto", sans-serif;
+  font-family: 'roboto', sans-serif;
   background-color: #4caf50;
   color: white;
   border: none;
@@ -255,7 +303,7 @@ button:disabled {
 }
 
 .progress-steps {
-  font-family: "roboto", sans-serif;
+  font-family: 'roboto', sans-serif;
   display: flex;
   position: relative;
   justify-content: space-between;
@@ -271,7 +319,7 @@ button:disabled {
 }
 
 .step::before {
-  content: "";
+  content: '';
   display: block;
   width: 20px;
   height: 20px;
@@ -316,7 +364,7 @@ button:disabled {
 .pedido-bloque ul {
   list-style: none;
   padding-left: 50px;
-  font-family: "roboto", sans-serif;
+  font-family: 'roboto', sans-serif;
   margin-bottom: 1rem;
 }
 .pedido-bloque ul li {

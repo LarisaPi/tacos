@@ -9,7 +9,7 @@
 
       <!-- Botón condicional por rol -->
       <div class="edit-btn-container" v-if="rolValido">
-        <router-link to="/editar_inicio" class="edit-btn"
+        <router-link to="/editar-inicio" class="edit-btn"
           >✏️ Editar contenido</router-link
         >
       </div>
@@ -68,15 +68,17 @@ export default {
 };
 </script>
 
+
+
 <style scoped>
 .page {
   background-color: white;
   padding: 16px;
   font-family: "Arial", sans-serif;
+  text-align: center; /* ⬅️ Esto centra todo el texto */
 }
 
 .title {
-  text-align: center;
   font-size: 2.2rem;
   font-weight: bold;
   background-color: #fbd2c9;
@@ -94,7 +96,6 @@ export default {
 }
 
 .section-title {
-  text-align: center;
   font-size: 1.8rem;
   color: #0f0e0e;
   margin-bottom: 16px;
@@ -104,7 +105,6 @@ export default {
 .section-text {
   font-size: 1rem;
   color: #333;
-  text-align: center;
 }
 
 .main-image {
@@ -124,7 +124,6 @@ export default {
 }
 
 .image-block {
-  text-align: center;
   background-color: #f7b998;
   padding: 10px;
   border-radius: 8px;
@@ -133,7 +132,7 @@ export default {
 .image-wrapper {
   width: 100%;
   max-width: 400px;
-  height: 200px; /* ⬅️ Alto fijo uniforme */
+  height: 200px;
   overflow: hidden;
   margin: 0 auto 6px;
   border-radius: 6px;
@@ -142,13 +141,14 @@ export default {
 .image-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* ⬅️ Para evitar deformaciones */
+  object-fit: cover;
   display: block;
 }
 
 .image-block p {
   font-size: 0.9rem;
   color: #333;
+  text-align: center;
 }
 
 .edit-btn-container {

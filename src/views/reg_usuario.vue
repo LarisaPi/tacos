@@ -14,6 +14,7 @@
       </div>
     </div>
 
+    <!-- Contacto y tipo -->
     <div class="grupo">
       <div class="campo">
         <label>Contacto</label>
@@ -26,7 +27,7 @@
       <div class="campo">
         <label>Tipo de usuario</label>
         <select v-model="form.tipo_usuario">
-          <option value="admin">Administrador</option>
+          <option v-if="rolValido" value="admin">Administrador</option>
           <option value="vendedor">Empleado</option>
           <option value="cliente">Cliente</option>
         </select>
@@ -37,19 +38,11 @@
     <div class="grupo">
       <div class="campo">
         <label>Correo electrónico</label>
-        <input
-          v-model="form.correo_electronico"
-          type="email"
-          placeholder="Ej. usuario@ejemplo.com"
-        />
+        <input v-model="form.correo_electronico" type="email" placeholder="Ej. usuario@ejemplo.com" />
       </div>
       <div class="campo">
         <label>Contraseña</label>
-        <input
-          v-model="form.contrasena"
-          type="password"
-          placeholder="Ingrese una contraseña segura"
-        />
+        <input v-model="form.contrasena" type="password" placeholder="Ingrese una contraseña segura" />
       </div>
     </div>
 
@@ -62,40 +55,24 @@
       </div>
       <div class="campo">
         <label>Ciudad</label>
-        <input
-          v-model="form.direccion.ciudad"
-          type="text"
-          placeholder="Ej. Ciudad de México"
-        />
+        <input v-model="form.direccion.ciudad" type="text" placeholder="Ej. Ciudad de México" />
       </div>
     </div>
 
     <div class="grupo">
       <div class="campo">
         <label>Código postal</label>
-        <input
-          v-model="form.direccion.codigo_postal"
-          type="text"
-          placeholder="Ej. 06000"
-        />
+        <input v-model="form.direccion.codigo_postal" type="text" placeholder="Ej. 06000" />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
-        <input
-          v-model="form.direccion.estado_provincia_zona"
-          type="text"
-          placeholder="Ej. CDMX"
-        />
+        <input v-model="form.direccion.estado_provincia_zona" type="text" placeholder="Ej. CDMX" />
       </div>
     </div>
 
     <div class="campo">
       <label>Entre calles</label>
-      <input
-        v-model="form.direccion.entre_calles"
-        type="text"
-        placeholder="Ej. Juárez y Madero"
-      />
+      <input v-model="form.direccion.entre_calles" type="text" placeholder="Ej. Juárez y Madero" />
     </div>
 
     <!-- Imagen de perfil -->
@@ -111,8 +88,6 @@
           class="file-input"
         />
       </div>
-
-      <!-- Vista previa -->
       <div v-if="usuarioPreviewUrl" class="preview">
         <img :src="usuarioPreviewUrl" alt="Vista previa de perfil" />
       </div>
@@ -129,6 +104,17 @@
 import Swal from "sweetalert2";
 
 export default {
+  props: {
+  rolUsuario: {
+    type: String,
+    default: null
+  }
+},
+computed: {
+  rolValido() {
+    return this.rolUsuario === "admin";
+  }
+},
   name: "RegistroUsuario",
   data() {
     return {
@@ -151,26 +137,21 @@ export default {
       usuarioPreviewUrl: null,
     };
   },
+  computed: {
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return rol === "admin";
+    },
+  },
   methods: {
     onUsuarioImageChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.form.foto_perfil = e.target.result;
-          if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
-          this.usuarioPreviewUrl = URL.createObjectURL(file);
-        };
-        reader.readAsDataURL(file);
+        this.form.foto_perfil = file;
+        this.usuarioPreviewUrl = URL.createObjectURL(file);
       } else {
         this.form.foto_perfil = null;
-        if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
-        this.usuarioPreviewUrl = null;
-        Swal.fire(
-          "Imagen inválida",
-          "Por favor selecciona una imagen válida.",
-          "warning"
-        );
+        Swal.fire("Imagen inválida", "Selecciona una imagen válida.", "warning");
       }
     },
     registrarUsuario() {
@@ -179,9 +160,7 @@ export default {
         text: "Se guardará el nuevo usuario en el sistema.",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#FFF07F",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "¡Sí, registrar usuario!",
+        confirmButtonText: "¡Sí, registrar!",
         cancelButtonText: "Cancelar",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -208,11 +187,7 @@ export default {
             .then((res) => res.json())
             .then((data) => {
               if (data.success) {
-                Swal.fire(
-                  "¡Registrado con éxito!",
-                  "Usuario registrado exitosamente.",
-                  "success"
-                );
+                Swal.fire("¡Registrado!", "Usuario creado correctamente.", "success");
                 this.resetForm();
               } else {
                 throw new Error("No se pudo registrar.");
@@ -251,6 +226,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .input-file input[type="file"] {
